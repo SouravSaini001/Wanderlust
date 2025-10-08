@@ -1,0 +1,48 @@
+<% layout('partials/boilerplate.ejs') %>
+
+<body>
+    <div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+      <div class="card shadow rounded-4">
+        <div class="card-body p-4">
+          <h3 class="text-center mb-4 fw-bold">Login</h3>
+          
+          <form action="/login" method="POST" novalidate class="needs-validation">
+            <!-- Username -->
+            <div class="mb-3">
+              <label for="username" class="form-label">Username</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="username" 
+                name="username" 
+                placeholder="Enter your username" 
+                required>
+            </div>
+
+            <!-- Password -->
+            <div class="mb-3">
+              <label for="password" class="form-label">Password</label>
+              <input 
+                type="password" 
+                class="form-control" 
+                id="password" 
+                name="password" 
+                placeholder="Enter your password" 
+                required>
+            </div>
+
+            <!-- Submit -->
+            <button type="submit" class="btn btn-danger w-100 rounded-pill">Login</button>
+          </form>
+
+          <p class="text-center mt-3">
+            Don’t have an account? <a href="/signup" class="text-decoration-none fw-semibold">Sign up</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>

@@ -1,0 +1,149 @@
+<% layout('partials/boilerplate.ejs') %>
+
+<script>
+  const mapToken = "<%= process.env.MAP_TOKEN %>";
+  const coordinate = <%- JSON.stringify(listing.geometry.coordinates) %>;
+</script>
+<body class="bg-light">
+  <!-- Main Section -->
+  <div class="container-fluid px-lg-5 py-5">
+    <div class="row g-5">
+      <!-- Image Section -->
+      <div class="col-lg-7">
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+          <img
+            src="<%= listing.image.url %>"
+            alt="Listing Image"
+            class="img-fluid w-100"
+            style="height: 450px; object-fit: cover;"
+          />
+        </div>
+      </div>
+
+      <!-- Details Section -->
+      <div class="col-lg-5">
+        <div class="card border-0 shadow-lg rounded-4 p-4 bg-white h-100">
+          <h2 class="fw-bold text-dark mb-3"><%= listing.title %></h2>
+          <p class="text-secondary mb-1">
+            <i class="fa-solid fa-user"></i>
+            <strong>Owner:</strong> <%= listing.owner.username %>
+          </p>
+          <p class="text-secondary"><%= listing.location %>, <%= listing.country %></p>
+
+          <p class="lead text-muted mt-3"><%= listing.description %></p>
+
+          <h3 class="fw-bold text-success mt-4">
+            ₹ <%= listing.price.toLocaleString("en-IN") %>
+          </h3>
+
+          <% if (currUser && currUser._id.equals(listing.owner._id)) { %>
+          <div class="mt-4 d-flex gap-3">
+            <a href="/listings/<%= listing._id %>/edit" class="btn btn-warning fw-semibold px-4 py-2 rounded-pill">
+              <i class="fa-regular fa-pen-to-square"></i> Edit
+            </a>
+            <form action="/listings/<%= listing._id %>?_method=DELETE" method="POST" class="d-inline">
+              <button class="btn btn-danger fw-semibold px-4 py-2 rounded-pill" type="submit">
+                <i class="bi bi-trash"></i> Delete
+              </button>
+            </form>
+          </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Review Form Section -->
+  <% if (currUser) { %>
+  <section class="container py-5">
+    <div class="card border-0 shadow-lg rounded-4 p-4 bg-white">
+      <h3 class="fw-bold text-center text-primary mb-4">Leave a Review</h3>
+
+      <form
+        action="/listings/<%= listing._id %>/reviews"
+        method="POST"
+        class="needs-validation"
+        novalidate
+      >
+        <!-- Rating -->
+        <div class="mb-3 text-center">
+          <fieldset class="starability-slot d-inline-block">
+            <input type="radio" id="first-rate1" name="review[rating]" value="1" />
+            <label for="first-rate5" title="Terrible">1 stars</label>
+            <input type="radio" id="first-rate2" name="review[rating]" value="2" />
+            <label for="first-rate4" title="Not good">2 stars</label>
+            <input type="radio" id="first-rate3" name="review[rating]" value="3" />
+            <label for="first-rate3" title="Average">3 stars</label>
+            <input type="radio" id="first-rate4" name="review[rating]" value="4" />
+            <label for="first-rate2" title="Very good">4 stars</label>
+            <input type="radio" id="first-rate5" name="review[rating]" value="5" checked />
+            <label for="first-rate1" title="Amazing">5 star</label>
+          </fieldset>
+        </div>
+
+        <!-- Comment -->
+        <div class="mb-3">
+          <label for="comment" class="form-label fw-semibold">Your Comment</label>
+          <textarea
+            name="review[comment]"
+            id="comment"
+            rows="4"
+            class="form-control rounded-3 shadow-sm"
+            required
+          ></textarea>
+          <div class="invalid-feedback">Please write a comment.</div>
+        </div>
+
+        <div class="text-center">
+          <button
+            type="submit"
+            class="btn btn-success px-5 py-2 rounded-pill fw-semibold"
+          >
+            <i class="fa-regular fa-paper-plane"></i> Submit
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+  <% } %>
+
+  <!-- Reviews Section -->
+  <section class="container py-5">
+    <div class="card border-0 shadow-lg rounded-4 p-4 bg-white">
+      <h3 class="fw-bold text-center text-primary mb-4">User Reviews</h3>
+
+      <% if (listing.reviews.length === 0) { %>
+      <p class="text-muted text-center">No reviews yet. Be the first to review!</p>
+      <% } else { %>
+      <% listing.reviews.forEach(review => { %>
+      <div class="mb-4 p-3 border rounded-3 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+          <span><strong><i class="fa-solid fa-user"></i></strong> <%= review.author.username %></span>
+          <span class="text-success">⭐ <%= review.rating %>/5</span>
+        </div>
+        <p class="mt-2 mb-1"><%= review.comment %></p>
+        <form
+          action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=DELETE"
+          method="post"
+          class="text-end"
+        >
+          <button class="btn btn-sm btn-outline-danger rounded-pill">
+            <i class="bi bi-trash"></i> Delete
+          </button>
+        </form>
+      </div>
+      <% }) %>
+      <% } %>
+    </div>
+  </section>
+
+  <!-- Map Section -->
+  <section class="container py-5">
+    <div class="card border-0 shadow-lg rounded-4 p-4 bg-white">
+      <h3 class="fw-bold mb-3">Where You'll Be</h3>
+      <div id="map" style="height: 400px; border-radius: 12px;"></div>
+    </div>
+  </section>
+
+  <script src="/js/map.js"></script>
+</body>
