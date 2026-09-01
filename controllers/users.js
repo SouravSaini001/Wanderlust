@@ -74,26 +74,25 @@ module.exports.renderSignupForm = async (req, res) => {
 //
 
 module.exports.createUser = async (req, res, next) => {
-
     try {
-
         const {
             username,
             email,
             password,
         } = req.body;
 
+        console.log("========== SIGNUP DEBUG ==========");
+        console.log("1. Signup request received");
+        console.log("EMAIL:", email);
 
-        // ----------------------------------------
-        // Check whether username already exists
-        // ----------------------------------------
+        // Check username
+        console.log("2. Checking username...");
 
         const existingUsername = await User.findOne({
             username,
         });
 
         if (existingUsername) {
-
             req.flash(
                 "error",
                 "Username already exists."
@@ -102,17 +101,16 @@ module.exports.createUser = async (req, res, next) => {
             return res.redirect("/signup");
         }
 
+        console.log("3. Username available");
 
-        // ----------------------------------------
-        // Check whether email already exists
-        // ----------------------------------------
+        // Check email
+        console.log("4. Checking email...");
 
         const existingEmail = await User.findOne({
             email,
         });
 
         if (existingEmail) {
-
             req.flash(
                 "error",
                 "Email already registered."
@@ -121,68 +119,40 @@ module.exports.createUser = async (req, res, next) => {
             return res.redirect("/signup");
         }
 
+        console.log("5. Email available");
 
-        // ----------------------------------------
         // Generate OTP
-        // ----------------------------------------
-
         const otp = generateOTP();
 
+        console.log("6. OTP generated");
 
-        // ----------------------------------------
         // Hash OTP
-        // ----------------------------------------
-        //
-        // The actual OTP is never stored in
-        // the database.
-        //
-
         const otpHash = hashOTP(otp);
 
+        console.log("7. OTP hashed");
 
-        // ----------------------------------------
-        // Encrypt Password
-        // ----------------------------------------
-        //
-        // Password is temporarily encrypted
-        // because the user has not completed
-        // email verification yet.
-        //
-
+        // Encrypt password
         const encryptedPassword = encrypt(password);
 
+        console.log("8. Password encrypted");
 
-        // ----------------------------------------
-        // Delete Previous Pending Registration
-        // ----------------------------------------
-        //
-        // Prevent multiple pending registrations
-        // for the same email.
-        //
-
+        // Delete previous pending registration
         await PendingUser.deleteMany({
             email,
         });
 
+        console.log("9. Old pending user deleted");
 
-        // ----------------------------------------
-        // Create Pending User
-        // ----------------------------------------
-
+        // Create pending user
         await PendingUser.create({
-
             username,
-
             email,
-
             password: {
                 encrypted: encryptedPassword.encrypted,
                 iv: encryptedPassword.iv,
             },
-
             otpHash,
 
-            // OTP valid for 5 minutes
             otpExpires: new Date(
                 Date.now() + 5 * 60 * 1000
             ),
@@ -190,36 +160,35 @@ module.exports.createUser = async (req, res, next) => {
             otpAttempts: 0,
         });
 
+        console.log("10. Pending user created");
 
-        // ----------------------------------------
-        // Store Email in Session
-        // ----------------------------------------
-        //
-        // Only the email is stored in the session.
-        // The password and OTP are NOT stored
-        // in the session.
-        //
-
+        // Store email in session
         req.session.otpEmail = email;
 
+        console.log("11. Email stored in session");
 
-        // ----------------------------------------
-        // Send OTP Email
-        // ----------------------------------------
+        // Send OTP
+        console.log("12. Sending OTP email...");
 
         await sendOTP(email, otp);
 
+        console.log("13. OTP email sent successfully");
 
         req.flash(
             "success",
             "OTP sent to your email. Please verify your email."
         );
 
+        console.log("14. Redirecting to verify OTP");
+        console.log("================================");
 
-        // Go to OTP verification page
-        res.redirect("/verify-otp");
+        return res.redirect("/verify-otp");
 
     } catch (err) {
+
+        console.error("========== SIGNUP ERROR ==========");
+        console.error(err);
+        console.error("==================================");
 
         next(err);
     }
