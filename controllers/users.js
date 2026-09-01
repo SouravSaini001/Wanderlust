@@ -1,34 +1,95 @@
-const User = require("../Models/user");
-const sendOTP = require("../utils/sendOTP.js");
+/**
+ * ============================================
+ * WANDERLUST - USER CONTROLLER
+ * ============================================
+ *
+ * This controller handles:
+ *
+ * 1. User signup
+ * 2. Email OTP verification
+ * 3. OTP resend
+ * 4. User login
+ * 5. User logout
+ * 6. Forgot password
+ * 7. Password reset OTP verification
+ * 8. Password reset
+ */
+
+
+// ============================================
+// 1. IMPORT REQUIRED MODULES
+// ============================================
+
+const User = require("../Models/user.js");
 const PendingUser = require("../Models/pendingUser.js");
-const crypto = require("crypto");
+
+const sendOTP = require("../utils/sendOTP.js");
 
 const {
     encrypt,
-    decrypt
+    decrypt,
 } = require("../utils/crypto.js");
 
 const {
     generateOTP,
-    hashOTP
+    hashOTP,
 } = require("../utils/otp.js");
 
-// Render Signup Form
+
+// ============================================
+// 2. RENDER SIGNUP FORM
+// ============================================
+
+/**
+ * Display the signup page.
+ */
+
 module.exports.renderSignupForm = async (req, res) => {
+
     res.render("users/signup.ejs");
 };
 
 
-// Sign Up user
+// ============================================
+// 3. CREATE PENDING USER
+// ============================================
+//
+// The user is NOT immediately created in the
+// User collection.
+//
+// Instead:
+//     Signup data
+//          ↓
+//     Generate OTP
+//          ↓
+//     Encrypt password
+//          ↓
+//     Store in PendingUser
+//          ↓
+//     Send OTP
+//          ↓
+//     Verify OTP
+//          ↓
+//     Create actual User
+//
+
 module.exports.createUser = async (req, res, next) => {
 
     try {
 
-        const { username, email, password } = req.body;
+        const {
+            username,
+            email,
+            password,
+        } = req.body;
 
+
+        // ----------------------------------------
         // Check whether username already exists
+        // ----------------------------------------
+
         const existingUsername = await User.findOne({
-            username
+            username,
         });
 
         if (existingUsername) {
@@ -42,9 +103,12 @@ module.exports.createUser = async (req, res, next) => {
         }
 
 
+        // ----------------------------------------
         // Check whether email already exists
+        // ----------------------------------------
+
         const existingEmail = await User.findOne({
-            email
+            email,
         });
 
         if (existingEmail) {
@@ -58,24 +122,53 @@ module.exports.createUser = async (req, res, next) => {
         }
 
 
+        // ----------------------------------------
         // Generate OTP
+        // ----------------------------------------
+
         const otp = generateOTP();
 
-        // Hash OTP before storing
+
+        // ----------------------------------------
+        // Hash OTP
+        // ----------------------------------------
+        //
+        // The actual OTP is never stored in
+        // the database.
+        //
+
         const otpHash = hashOTP(otp);
 
 
-        // Encrypt password temporarily
+        // ----------------------------------------
+        // Encrypt Password
+        // ----------------------------------------
+        //
+        // Password is temporarily encrypted
+        // because the user has not completed
+        // email verification yet.
+        //
+
         const encryptedPassword = encrypt(password);
 
 
-        // Delete old pending registration
+        // ----------------------------------------
+        // Delete Previous Pending Registration
+        // ----------------------------------------
+        //
+        // Prevent multiple pending registrations
+        // for the same email.
+        //
+
         await PendingUser.deleteMany({
-            email
+            email,
         });
 
 
-        // Create pending user
+        // ----------------------------------------
+        // Create Pending User
+        // ----------------------------------------
+
         await PendingUser.create({
 
             username,
@@ -84,25 +177,36 @@ module.exports.createUser = async (req, res, next) => {
 
             password: {
                 encrypted: encryptedPassword.encrypted,
-                iv: encryptedPassword.iv
+                iv: encryptedPassword.iv,
             },
 
             otpHash,
 
-            otpExpires:
-                new Date(
-                    Date.now() + 5 * 60 * 1000
-                ),
+            // OTP valid for 5 minutes
+            otpExpires: new Date(
+                Date.now() + 5 * 60 * 1000
+            ),
 
-            otpAttempts: 0
+            otpAttempts: 0,
         });
 
 
-        // Store ONLY email in session
+        // ----------------------------------------
+        // Store Email in Session
+        // ----------------------------------------
+        //
+        // Only the email is stored in the session.
+        // The password and OTP are NOT stored
+        // in the session.
+        //
+
         req.session.otpEmail = email;
 
 
-        // Send OTP
+        // ----------------------------------------
+        // Send OTP Email
+        // ----------------------------------------
+
         await sendOTP(email, otp);
 
 
@@ -112,18 +216,23 @@ module.exports.createUser = async (req, res, next) => {
         );
 
 
+        // Go to OTP verification page
         res.redirect("/verify-otp");
 
     } catch (err) {
 
         next(err);
-
     }
 };
 
-//Render Verify Otp form
+
+// ============================================
+// 4. RENDER VERIFY OTP FORM
+// ============================================
+
 module.exports.renderVerifyOTPForm = async (req, res) => {
 
+    // User must have started signup first.
     if (!req.session.otpEmail) {
 
         req.flash(
@@ -137,318 +246,25 @@ module.exports.renderVerifyOTPForm = async (req, res) => {
     res.render("users/verify-otp.ejs");
 };
 
-// Render Reset OTP Form
 
-module.exports.renderResetOTPForm = (req, res) => {
+// ============================================
+// 5. VERIFY SIGNUP OTP
+// ============================================
+//
+// This verifies the OTP entered by the user.
+//
+// If correct:
+//     PendingUser
+//          ↓
+//     Decrypt password
+//          ↓
+//     Create User
+//          ↓
+//     Delete PendingUser
+//          ↓
+//     Login user
+//
 
-    if (!req.session.passwordReset) {
-
-        req.flash(
-            "error",
-            "Password reset session expired. Please try again."
-        );
-
-        return res.redirect("/forgot-password");
-    }
-
-    res.render("users/verify-reset-otp");
-};
-
-// Render Reset Password Form
-
-module.exports.renderResetPasswordForm = (req, res) => {
-
-    const reset = req.session.passwordReset;
-
-    if (!reset || !reset.verified) {
-
-        req.flash(
-            "error",
-            "Please verify the OTP first."
-        );
-
-        return res.redirect("/forgot-password");
-    }
-
-    res.render("users/reset-password");
-};
-
-// Reset Password
-
-module.exports.resetPassword = async (req, res, next) => {
-
-    const { password, confirmPassword } = req.body;
-
-    const reset = req.session.passwordReset;
-
-
-    // Check reset session
-
-    if (!reset || !reset.verified) {
-
-        req.flash(
-            "error",
-            "Please verify the OTP first."
-        );
-
-        return res.redirect("/forgot-password");
-    }
-
-
-    // Check passwords
-
-    if (password !== confirmPassword) {
-
-        req.flash(
-            "error",
-            "Passwords do not match."
-        );
-
-        return res.redirect("/reset-password");
-    }
-
-
-    // Find user
-
-    const user = await User.findById(reset.userId);
-
-
-    if (!user) {
-
-        delete req.session.passwordReset;
-
-        req.flash(
-            "error",
-            "User account not found."
-        );
-
-        return res.redirect("/forgot-password");
-    }
-
-
-    // Change password using Passport Local Mongoose
-
-    await user.setPassword(password);
-
-    await user.save();
-
-
-    // Delete reset session
-
-    delete req.session.passwordReset;
-
-
-    req.flash(
-        "success",
-        "Password changed successfully! Please login with your new password."
-    );
-
-    res.redirect("/login");
-};
-
-// Resend Password Reset OTP
-
-module.exports.resendResetOTP = async (req, res) => {
-
-    const reset = req.session.passwordReset;
-
-
-    // No reset session
-
-    if (!reset) {
-
-        req.flash(
-            "error",
-            "Password reset session expired. Please start again."
-        );
-
-        return res.redirect("/forgot-password");
-    }
-
-
-    // Maximum 3 resends
-
-    if (reset.resendCount >= 3) {
-
-        delete req.session.passwordReset;
-
-        req.flash(
-            "error",
-            "Maximum resend limit reached. Please start again."
-        );
-
-        return res.redirect("/forgot-password");
-    }
-
-
-    // 60 second cooldown
-
-    const now = Date.now();
-
-    const timeSinceLastOTP =
-        now - reset.lastSentAt;
-
-    const cooldown = 60 * 1000;
-
-
-    if (timeSinceLastOTP < cooldown) {
-
-        const remainingSeconds = Math.ceil(
-            (cooldown - timeSinceLastOTP) / 1000
-        );
-
-        req.flash(
-            "error",
-            `Please wait ${remainingSeconds} seconds before requesting another OTP.`
-        );
-
-        return res.redirect("/verify-reset-otp");
-    }
-
-
-    // Find user
-
-    const user = await User.findById(reset.userId);
-
-
-    if (!user) {
-
-        delete req.session.passwordReset;
-
-        req.flash(
-            "error",
-            "User account not found."
-        );
-
-        return res.redirect("/forgot-password");
-    }
-
-
-    // Generate new OTP
-
-    const otp = crypto
-        .randomInt(100000, 1000000)
-        .toString();
-
-
-    // Update session
-
-    reset.otp = otp;
-
-    reset.expiresAt =
-        Date.now() + 5 * 60 * 1000;
-
-    reset.lastSentAt = Date.now();
-
-    reset.resendCount++;
-
-    reset.attempts = 0;
-
-    reset.verified = false;
-
-
-    // Send new OTP
-
-    await sendOTP(user.email, otp);
-
-
-    req.flash(
-        "success",
-        "A new OTP has been sent to your registered email."
-    );
-
-    res.redirect("/verify-reset-otp");
-};
-
-// Verify Password Reset OTP
-
-module.exports.verifyResetOTP = async (req, res) => {
-
-    const { otp } = req.body;
-
-    const reset = req.session.passwordReset;
-
-
-    // No reset session
-
-    if (!reset) {
-
-        req.flash(
-            "error",
-            "Password reset session expired. Please try again."
-        );
-
-        return res.redirect("/forgot-password");
-    }
-
-
-    // Maximum 5 attempts
-
-    if (reset.attempts >= 5) {
-
-        delete req.session.passwordReset;
-
-        req.flash(
-            "error",
-            "Too many incorrect attempts. Please request a new OTP."
-        );
-
-        return res.redirect("/forgot-password");
-    }
-
-
-    // OTP expired
-
-    if (Date.now() > reset.expiresAt) {
-
-        delete req.session.passwordReset;
-
-        req.flash(
-            "error",
-            "OTP expired. Please request a new OTP."
-        );
-
-        return res.redirect("/forgot-password");
-    }
-
-
-    // Wrong OTP
-
-    if (otp !== reset.otp) {
-
-        reset.attempts++;
-
-        req.flash(
-            "error",
-            `Invalid OTP. ${5 - reset.attempts} attempts remaining.`
-        );
-
-        return res.redirect("/verify-reset-otp");
-    }
-
-
-    // Correct OTP
-
-    reset.verified = true;
-
-    // OTP should not be usable again
-
-    reset.otp = null;
-
-    reset.expiresAt = null;
-
-    reset.attempts = 0;
-
-
-    req.flash(
-        "success",
-        "OTP verified successfully. You can now create a new password."
-    );
-
-    res.redirect("/reset-password");
-};
-
-// Verify OTP
 module.exports.verifyOTP = async (req, res, next) => {
 
     try {
@@ -456,7 +272,10 @@ module.exports.verifyOTP = async (req, res, next) => {
         const { otp } = req.body;
 
 
-        // Check session
+        // ----------------------------------------
+        // Check Signup Session
+        // ----------------------------------------
+
         if (!req.session.otpEmail) {
 
             req.flash(
@@ -468,12 +287,18 @@ module.exports.verifyOTP = async (req, res, next) => {
         }
 
 
-        // Find pending user
-        const pendingUser =
-            await PendingUser.findOne({
-                email: req.session.otpEmail
-            });
+        // ----------------------------------------
+        // Find Pending User
+        // ----------------------------------------
 
+        const pendingUser = await PendingUser.findOne({
+            email: req.session.otpEmail,
+        });
+
+
+        // ----------------------------------------
+        // Pending Registration Not Found
+        // ----------------------------------------
 
         if (!pendingUser) {
 
@@ -488,14 +313,17 @@ module.exports.verifyOTP = async (req, res, next) => {
         }
 
 
-        // Check OTP expiry
+        // ----------------------------------------
+        // Check OTP Expiration
+        // ----------------------------------------
+
         if (
             Date.now() >
             pendingUser.otpExpires.getTime()
         ) {
 
             await PendingUser.deleteOne({
-                _id: pendingUser._id
+                _id: pendingUser._id,
             });
 
             req.session.otpEmail = null;
@@ -509,11 +337,14 @@ module.exports.verifyOTP = async (req, res, next) => {
         }
 
 
-        // Maximum attempts
+        // ----------------------------------------
+        // Check Maximum OTP Attempts
+        // ----------------------------------------
+
         if (pendingUser.otpAttempts >= 5) {
 
             await PendingUser.deleteOne({
-                _id: pendingUser._id
+                _id: pendingUser._id,
             });
 
             req.session.otpEmail = null;
@@ -527,12 +358,17 @@ module.exports.verifyOTP = async (req, res, next) => {
         }
 
 
-        // Hash entered OTP
-        const enteredOTPHash =
-            hashOTP(otp);
+        // ----------------------------------------
+        // Hash Entered OTP
+        // ----------------------------------------
+
+        const enteredOTPHash = hashOTP(otp);
 
 
+        // ----------------------------------------
         // Compare OTP
+        // ----------------------------------------
+
         if (
             enteredOTPHash !==
             pendingUser.otpHash
@@ -551,47 +387,65 @@ module.exports.verifyOTP = async (req, res, next) => {
         }
 
 
-        // =========================
-        // OTP CORRECT
-        // =========================
+        // ========================================
+        // OTP IS CORRECT
+        // ========================================
 
 
-        // Decrypt temporary password
+        // ----------------------------------------
+        // Decrypt Temporary Password
+        // ----------------------------------------
+
         const password = decrypt(
             pendingUser.password.encrypted,
             pendingUser.password.iv
         );
 
 
-        // Create actual user
+        // ----------------------------------------
+        // Create New User
+        // ----------------------------------------
+
         const newUser = new User({
-
             username: pendingUser.username,
-
-            email: pendingUser.email
-
+            email: pendingUser.email,
         });
 
 
-        // Passport Local Mongoose
-        const registeredUser =
-            await User.register(
-                newUser,
-                password
-            );
+        // ----------------------------------------
+        // Register User Using Passport
+        // ----------------------------------------
+        //
+        // passport-local-mongoose handles the
+        // password hashing for the permanent user.
+        //
+
+        const registeredUser = await User.register(
+            newUser,
+            password
+        );
 
 
-        // Delete pending registration
+        // ----------------------------------------
+        // Delete Pending Registration
+        // ----------------------------------------
+
         await PendingUser.deleteOne({
-            _id: pendingUser._id
+            _id: pendingUser._id,
         });
 
 
-        // Clear session
+        // ----------------------------------------
+        // Clear Signup Session
+        // ----------------------------------------
+
         req.session.otpEmail = null;
 
 
-        // Login
+        // ----------------------------------------
+        // Automatically Login User
+        // ----------------------------------------
+
         req.login(
             registeredUser,
             (err) => {
@@ -600,31 +454,36 @@ module.exports.verifyOTP = async (req, res, next) => {
                     return next(err);
                 }
 
-
                 req.flash(
                     "success",
                     "Email verified successfully! Welcome to Wanderlust."
                 );
 
-
                 res.redirect("/listings");
-
             }
         );
 
     } catch (err) {
 
         next(err);
-
     }
 };
 
-//Resend OTP
+
+// ============================================
+// 6. RESEND SIGNUP OTP
+// ============================================
+
 module.exports.resendOTP = async (req, res, next) => {
 
     try {
 
         const email = req.session.otpEmail;
+
+
+        // ----------------------------------------
+        // Check Signup Session
+        // ----------------------------------------
 
         if (!email) {
 
@@ -637,10 +496,13 @@ module.exports.resendOTP = async (req, res, next) => {
         }
 
 
-        const pendingUser =
-            await PendingUser.findOne({
-                email
-            });
+        // ----------------------------------------
+        // Find Pending User
+        // ----------------------------------------
+
+        const pendingUser = await PendingUser.findOne({
+            email,
+        });
 
 
         if (!pendingUser) {
@@ -656,30 +518,43 @@ module.exports.resendOTP = async (req, res, next) => {
         }
 
 
-        // Generate new OTP
+        // ----------------------------------------
+        // Generate New OTP
+        // ----------------------------------------
+
         const otp = generateOTP();
 
 
-        // Hash new OTP
-        pendingUser.otpHash =
-            hashOTP(otp);
+        // ----------------------------------------
+        // Hash New OTP
+        // ----------------------------------------
+
+        pendingUser.otpHash = hashOTP(otp);
 
 
-        // New expiry
-        pendingUser.otpExpires =
-            new Date(
-                Date.now() + 5 * 60 * 1000
-            );
+        // ----------------------------------------
+        // Reset OTP Expiration
+        // ----------------------------------------
+
+        pendingUser.otpExpires = new Date(
+            Date.now() + 5 * 60 * 1000
+        );
 
 
-        // Reset attempts
+        // ----------------------------------------
+        // Reset OTP Attempts
+        // ----------------------------------------
+
         pendingUser.otpAttempts = 0;
 
 
         await pendingUser.save();
 
 
-        // Send new OTP
+        // ----------------------------------------
+        // Send New OTP
+        // ----------------------------------------
+
         await sendOTP(email, otp);
 
 
@@ -688,34 +563,124 @@ module.exports.resendOTP = async (req, res, next) => {
             "A new OTP has been sent to your email."
         );
 
-
         res.redirect("/verify-otp");
 
     } catch (err) {
 
         next(err);
-
     }
 };
 
 
-// Render Login form
+// ============================================
+// 7. RENDER LOGIN FORM
+// ============================================
+
 module.exports.renderLoginForm = async (req, res) => {
+
     res.render("users/login.ejs");
 };
 
-// Render Forgot Password Form
 
-// Render Forgot Password Form
-module.exports.renderForgotPasswordForm = (req, res) => {
-    console.log("GET /forgot-password");
+// ============================================
+// 8. LOGIN USER
+// ============================================
+//
+// Passport handles authentication before this
+// controller is called.
+//
+// This controller decides where the user should
+// be redirected after successful login.
+//
 
-    return res.render("users/forgot-password");
+module.exports.loginUser = async (req, res) => {
+
+    req.flash(
+        "success",
+        "Welcome to Wanderlust! You are logged in!"
+    );
+
+
+    // Use saved URL or default to listings.
+    let redirectUrl =
+        res.locals.redirectUrl || "/listings";
+
+
+    // Remove query parameters
+    redirectUrl = redirectUrl.split("?")[0];
+
+
+    // Prevent redirecting back to review routes.
+    if (redirectUrl.includes("/reviews")) {
+
+        redirectUrl =
+            redirectUrl.split("/reviews")[0];
+    }
+
+
+    res.redirect(redirectUrl);
 };
 
-// Send Forgot Password OTP
 
-module.exports.sendForgotPasswordOTP = async (req, res) => {
+// ============================================
+// 9. LOGOUT USER
+// ============================================
+
+module.exports.logoutUser = (req, res, next) => {
+
+    req.logout((err) => {
+
+        if (err) {
+            return next(err);
+        }
+
+        req.flash(
+            "success",
+            "Logged You Out!"
+        );
+
+        res.redirect("/listings");
+    });
+};
+
+
+// ============================================
+// 10. RENDER FORGOT PASSWORD FORM
+// ============================================
+
+module.exports.renderForgotPasswordForm = (
+    req,
+    res
+) => {
+
+    res.render(
+        "users/forgot-password.ejs"
+    );
+};
+
+
+// ============================================
+// 11. SEND FORGOT PASSWORD OTP
+// ============================================
+//
+// User can enter either:
+//
+//     Email
+//       OR
+//     Username
+//
+// If the account exists:
+//     Generate OTP
+//          ↓
+//     Store reset data in session
+//          ↓
+//     Send OTP to registered email
+//
+
+module.exports.sendForgotPasswordOTP = async (
+    req,
+    res
+) => {
 
     try {
 
@@ -726,28 +691,29 @@ module.exports.sendForgotPasswordOTP = async (req, res) => {
         let user;
 
 
-        // Check whether input looks like an email
+        // ----------------------------------------
+        // Check Whether Identifier Is Email
+        // ----------------------------------------
+
         if (identifier.includes("@")) {
 
             user = await User.findOne({
-                email: identifier.toLowerCase()
+                email: identifier.toLowerCase(),
             });
 
         } else {
 
-            // Otherwise treat it as username
+            // Treat identifier as username
             user = await User.findOne({
-                username: identifier
+                username: identifier,
             });
-
         }
 
 
-        console.log("Identifier:", identifier);
-        console.log("User:", user);
+        // ----------------------------------------
+        // User Not Found
+        // ----------------------------------------
 
-
-        // User not found
         if (!user) {
 
             req.flash(
@@ -755,39 +721,55 @@ module.exports.sendForgotPasswordOTP = async (req, res) => {
                 "No account found with these details."
             );
 
-            return res.redirect("/forgot-password");
+            return res.redirect(
+                "/forgot-password"
+            );
         }
 
 
-        // Generate 6 digit OTP
-        const otp = crypto
-            .randomInt(100000, 1000000)
-            .toString();
+        // ----------------------------------------
+        // Generate OTP
+        // ----------------------------------------
 
-        console.log("Generated OTP:", otp);
+        const otp = generateOTP();
 
 
-        // Store reset information in session
+        // ----------------------------------------
+        // Store Reset Information in Session
+        // ----------------------------------------
+
         req.session.passwordReset = {
 
             userId: user._id.toString(),
 
-            otp: otp,
+            otp,
 
-            expiresAt: Date.now() + 5 * 60 * 1000,
+            // OTP valid for 5 minutes
+            expiresAt:
+                Date.now() + 5 * 60 * 1000,
 
+            // Maximum incorrect attempts
             attempts: 0,
 
+            // Number of OTP resends
             resendCount: 0,
 
+            // Used for 60-second resend cooldown
             lastSentAt: Date.now(),
 
-            verified: false
+            // OTP has not been verified yet
+            verified: false,
         };
 
 
-        // Send OTP to registered email
-        await sendOTP(user.email, otp);
+        // ----------------------------------------
+        // Send OTP to Registered Email
+        // ----------------------------------------
+
+        await sendOTP(
+            user.email,
+            otp
+        );
 
 
         req.flash(
@@ -795,52 +777,501 @@ module.exports.sendForgotPasswordOTP = async (req, res) => {
             "OTP sent to your registered email."
         );
 
-
-        return res.redirect("/verify-reset-otp");
-
+        return res.redirect(
+            "/verify-reset-otp"
+        );
 
     } catch (err) {
 
-        console.error("Forgot Password Error:", err);
+        console.error(
+            "Forgot Password Error:",
+            err
+        );
 
         req.flash(
             "error",
             "Unable to send OTP. Please try again later."
         );
 
-        return res.redirect("/forgot-password");
+        return res.redirect(
+            "/forgot-password"
+        );
     }
 };
 
 
-module.exports.loginUser = async (req, res) => {
+// ============================================
+// 12. RENDER RESET OTP FORM
+// ============================================
+
+module.exports.renderResetOTPForm = (
+    req,
+    res
+) => {
+
+    if (!req.session.passwordReset) {
+
+        req.flash(
+            "error",
+            "Password reset session expired. Please try again."
+        );
+
+        return res.redirect(
+            "/forgot-password"
+        );
+    }
+
+    res.render(
+        "users/verify-reset-otp.ejs"
+    );
+};
+
+
+// ============================================
+// 13. VERIFY PASSWORD RESET OTP
+// ============================================
+
+module.exports.verifyResetOTP = async (
+    req,
+    res
+) => {
+
+    const { otp } = req.body;
+
+    const reset =
+        req.session.passwordReset;
+
+
+    // ----------------------------------------
+    // Check Reset Session
+    // ----------------------------------------
+
+    if (!reset) {
+
+        req.flash(
+            "error",
+            "Password reset session expired. Please try again."
+        );
+
+        return res.redirect(
+            "/forgot-password"
+        );
+    }
+
+
+    // ----------------------------------------
+    // Maximum 5 Attempts
+    // ----------------------------------------
+
+    if (reset.attempts >= 5) {
+
+        delete req.session.passwordReset;
+
+        req.flash(
+            "error",
+            "Too many incorrect attempts. Please request a new OTP."
+        );
+
+        return res.redirect(
+            "/forgot-password"
+        );
+    }
+
+
+    // ----------------------------------------
+    // Check OTP Expiration
+    // ----------------------------------------
+
+    if (Date.now() > reset.expiresAt) {
+
+        delete req.session.passwordReset;
+
+        req.flash(
+            "error",
+            "OTP expired. Please request a new OTP."
+        );
+
+        return res.redirect(
+            "/forgot-password"
+        );
+    }
+
+
+    // ----------------------------------------
+    // Compare OTP
+    // ----------------------------------------
+
+    if (otp !== reset.otp) {
+
+        reset.attempts++;
+
+        req.flash(
+            "error",
+            `Invalid OTP. ${5 - reset.attempts} attempts remaining.`
+        );
+
+        return res.redirect(
+            "/verify-reset-otp"
+        );
+    }
+
+
+    // ========================================
+    // OTP IS CORRECT
+    // ========================================
+
+    reset.verified = true;
+
+
+    // OTP cannot be reused.
+    reset.otp = null;
+    reset.expiresAt = null;
+    reset.attempts = 0;
+
+
     req.flash(
         "success",
-        "Welcome to Wanderlust! You are logged in!"
+        "OTP verified successfully. You can now create a new password."
     );
 
-    let redirectUrl = res.locals.redirectUrl || "/listings";
-
-    redirectUrl = redirectUrl.split("?")[0];
-
-    if (redirectUrl.includes("/reviews")) {
-        redirectUrl = redirectUrl.split("/reviews")[0];
-    }
-
-    res.redirect(redirectUrl);
+    res.redirect(
+        "/reset-password"
+    );
 };
 
 
-// Logout user
-module.exports.logoutUser = (req, res, next) => {
+// ============================================
+// 14. RENDER RESET PASSWORD FORM
+// ============================================
 
-    req.logOut((err) => {
+module.exports.renderResetPasswordForm = (
+    req,
+    res
+) => {
 
-        if (err) {
-            return next(err);
+    const reset =
+        req.session.passwordReset;
+
+
+    // User must verify OTP first.
+    if (!reset || !reset.verified) {
+
+        req.flash(
+            "error",
+            "Please verify the OTP first."
+        );
+
+        return res.redirect(
+            "/forgot-password"
+        );
+    }
+
+
+    res.render(
+        "users/reset-password.ejs"
+    );
+};
+
+
+// ============================================
+// 15. RESET PASSWORD
+// ============================================
+//
+// After successful OTP verification:
+//
+//     New Password
+//          ↓
+//     setPassword()
+//          ↓
+//     Passport hashes password
+//          ↓
+//     Save User
+//
+
+module.exports.resetPassword = async (
+    req,
+    res,
+    next
+) => {
+
+    try {
+
+        const {
+            password,
+            confirmPassword,
+        } = req.body;
+
+        const reset =
+            req.session.passwordReset;
+
+
+        // ----------------------------------------
+        // Check Reset Session
+        // ----------------------------------------
+
+        if (!reset || !reset.verified) {
+
+            req.flash(
+                "error",
+                "Please verify the OTP first."
+            );
+
+            return res.redirect(
+                "/forgot-password"
+            );
         }
 
-        req.flash("success", "Logged You Out!");
-        res.redirect("/listings");
-    });
+
+        // ----------------------------------------
+        // Check Password Confirmation
+        // ----------------------------------------
+
+        if (password !== confirmPassword) {
+
+            req.flash(
+                "error",
+                "Passwords do not match."
+            );
+
+            return res.redirect(
+                "/reset-password"
+            );
+        }
+
+
+        // ----------------------------------------
+        // Find User
+        // ----------------------------------------
+
+        const user = await User.findById(
+            reset.userId
+        );
+
+
+        if (!user) {
+
+            delete req.session.passwordReset;
+
+            req.flash(
+                "error",
+                "User account not found."
+            );
+
+            return res.redirect(
+                "/forgot-password"
+            );
+        }
+
+
+        // ----------------------------------------
+        // Change Password
+        // ----------------------------------------
+        //
+        // passport-local-mongoose provides
+        // setPassword(), which safely hashes
+        // the new password.
+        //
+
+        await user.setPassword(password);
+
+        await user.save();
+
+
+        // ----------------------------------------
+        // Clear Reset Session
+        // ----------------------------------------
+
+        delete req.session.passwordReset;
+
+
+        req.flash(
+            "success",
+            "Password changed successfully! Please login with your new password."
+        );
+
+        res.redirect("/login");
+
+    } catch (err) {
+
+        next(err);
+    }
+};
+
+
+// ============================================
+// 16. RESEND PASSWORD RESET OTP
+// ============================================
+//
+// Rules:
+//
+//     Maximum 3 resends
+//     60-second cooldown
+//     New OTP valid for 5 minutes
+//     Attempts reset to 0
+//
+
+module.exports.resendResetOTP = async (
+    req,
+    res
+) => {
+
+    try {
+
+        const reset =
+            req.session.passwordReset;
+
+
+        // ----------------------------------------
+        // Check Reset Session
+        // ----------------------------------------
+
+        if (!reset) {
+
+            req.flash(
+                "error",
+                "Password reset session expired. Please start again."
+            );
+
+            return res.redirect(
+                "/forgot-password"
+            );
+        }
+
+
+        // ----------------------------------------
+        // Maximum Resend Limit
+        // ----------------------------------------
+
+        if (reset.resendCount >= 3) {
+
+            delete req.session.passwordReset;
+
+            req.flash(
+                "error",
+                "Maximum resend limit reached. Please start again."
+            );
+
+            return res.redirect(
+                "/forgot-password"
+            );
+        }
+
+
+        // ----------------------------------------
+        // 60-Second Cooldown
+        // ----------------------------------------
+
+        const now = Date.now();
+
+        const timeSinceLastOTP =
+            now - reset.lastSentAt;
+
+        const cooldown =
+            60 * 1000;
+
+
+        if (timeSinceLastOTP < cooldown) {
+
+            const remainingSeconds =
+                Math.ceil(
+                    (cooldown - timeSinceLastOTP) /
+                    1000
+                );
+
+            req.flash(
+                "error",
+                `Please wait ${remainingSeconds} seconds before requesting another OTP.`
+            );
+
+            return res.redirect(
+                "/verify-reset-otp"
+            );
+        }
+
+
+        // ----------------------------------------
+        // Find User
+        // ----------------------------------------
+
+        const user = await User.findById(
+            reset.userId
+        );
+
+
+        if (!user) {
+
+            delete req.session.passwordReset;
+
+            req.flash(
+                "error",
+                "User account not found."
+            );
+
+            return res.redirect(
+                "/forgot-password"
+            );
+        }
+
+
+        // ----------------------------------------
+        // Generate New OTP
+        // ----------------------------------------
+
+        const otp = generateOTP();
+
+
+        // ----------------------------------------
+        // Update Reset Session
+        // ----------------------------------------
+
+        reset.otp = otp;
+
+        reset.expiresAt =
+            Date.now() + 5 * 60 * 1000;
+
+        reset.lastSentAt =
+            Date.now();
+
+        reset.resendCount++;
+
+        reset.attempts = 0;
+
+        reset.verified = false;
+
+
+        // ----------------------------------------
+        // Send New OTP
+        // ----------------------------------------
+
+        await sendOTP(
+            user.email,
+            otp
+        );
+
+
+        req.flash(
+            "success",
+            "A new OTP has been sent to your registered email."
+        );
+
+        res.redirect(
+            "/verify-reset-otp"
+        );
+
+    } catch (err) {
+
+        console.error(
+            "Resend Reset OTP Error:",
+            err
+        );
+
+        req.flash(
+            "error",
+            "Unable to resend OTP. Please try again."
+        );
+
+        res.redirect(
+            "/verify-reset-otp"
+        );
+    }
 };

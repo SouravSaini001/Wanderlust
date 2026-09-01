@@ -1,82 +1,555 @@
-const Listing = require("../Models/listing");
-const mbxGeocoding = require("@mapbox/mapbox-sdk/services/geocoding");
+/**
+ * ============================================
+ * WANDERLUST - LISTING CONTROLLER
+ * ============================================
+ *
+ * This controller handles all listing operations:
+ *
+ * 1. Display all listings
+ * 2. Display new listing form
+ * 3. Create listing
+ * 4. Display single listing
+ * 5. Display edit form
+ * 6. Update listing
+ * 7. Delete listing
+ *
+ * External Services:
+ *
+ * - MongoDB / Mongoose
+ * - Cloudinary for listing images
+ * - Mapbox for location geocoding
+ */
+
+
+// ============================================
+// 1. IMPORT REQUIRED MODULES
+// ============================================
+
+const Listing = require("../Models/listing.js");
+
+const mbxGeocoding = require(
+  "@mapbox/mapbox-sdk/services/geocoding"
+);
+
+
+// ============================================
+// 2. MAPBOX CONFIGURATION
+// ============================================
+
 const mapToken = process.env.MAP_TOKEN;
-const geocodingClient = mbxGeocoding({ accessToken: mapToken });
+
+const geocodingClient = mbxGeocoding({
+  accessToken: mapToken,
+});
+
+
+// ============================================
+// 3. INDEX / SHOW ALL LISTINGS
+// ============================================
+//
+// GET /listings
+//
+// If a category is provided:
+//
+//     /listings?category=Beach
+//
+// only listings from that category are shown.
+//
+// Otherwise, all listings are displayed.
+//
 
 module.exports.index = async (req, res) => {
-  const allListings = await Listing.find({});
-  res.render("listings/index", { allListings });
+
+  const { category } = req.query;
+
+  let allListings;
+
+
+  // ----------------------------------------
+  // Filter by category
+  // ----------------------------------------
+
+  if (category) {
+
+    allListings = await Listing.find({
+      category,
+    });
+
+  } else {
+
+    // No category selected
+    allListings = await Listing.find({});
+  }
+
+
+  // ----------------------------------------
+  // Render listings page
+  // ----------------------------------------
+
+  res.render(
+    "listings/index",
+    {
+      allListings,
+    }
+  );
 };
 
+
+// ============================================
+// 4. RENDER NEW LISTING FORM
+// ============================================
+//
+// GET /listings/new
+//
+// The isLoggedIn middleware in the route
+// ensures that only authenticated users can
+// access this page.
+//
+
 module.exports.renderNewForm = (req, res) => {
+
   res.render("listings/new");
 };
 
+
+// ============================================
+// 5. CREATE NEW LISTING
+// ============================================
+//
+// POST /listings
+//
+// Flow:
+//
+//     Form data
+//          ↓
+//     Upload image to Cloudinary
+//          ↓
+//     Geocode location using Mapbox
+//          ↓
+//     Create Listing document
+//          ↓
+//     Save owner
+//          ↓
+//     Save image information
+//          ↓
+//     Save geometry
+//          ↓
+//     MongoDB
+//
+
 module.exports.createListing = async (req, res) => {
-  // geocoding in structured input mode
-  let response = await geocodingClient
+
+
+  // ----------------------------------------
+  // Geocode Listing Location
+  // ----------------------------------------
+  //
+  // Convert a location such as:
+  //
+  //     "Goa"
+  //
+  // into geographical coordinates.
+  //
+
+  const response = await geocodingClient
     .forwardGeocode({
-      query : req.body.listing.location,
-      limit : 1
+
+      query: req.body.listing.location,
+
+      // We only need the best result.
+      limit: 1,
     })
-    .send()
-    
+    .send();
 
-  let url = req.file.path;
-  let filename = req.file.filename;
 
-  let newData = new Listing(req.body.listing);
-  newData.owner = req.user._id;
-  newData.image = { url, filename };
-  newData.geometry = response.body.features[0].geometry;
+  // ----------------------------------------
+  // Get Uploaded Image Information
+  // ----------------------------------------
 
-  await newData.save();
-  req.flash("success", "New Listing Created!");
+  const url = req.file.path;
+
+  const filename = req.file.filename;
+
+
+  // ----------------------------------------
+  // Create New Listing
+  // ----------------------------------------
+
+  const newListing = new Listing(
+    req.body.listing
+  );
+
+
+  // ----------------------------------------
+  // Set Listing Owner
+  // ----------------------------------------
+
+  newListing.owner = req.user._id;
+
+
+  // ----------------------------------------
+  // Save Cloudinary Image Information
+  // ----------------------------------------
+
+  newListing.image = {
+    url,
+    filename,
+  };
+
+
+  // ----------------------------------------
+  // Save Mapbox Geometry
+  // ----------------------------------------
+
+  newListing.geometry =
+    response.body.features[0].geometry;
+
+
+  // ----------------------------------------
+  // Save Listing to MongoDB
+  // ----------------------------------------
+
+  await newListing.save();
+
+
+  // ----------------------------------------
+  // Success Message
+  // ----------------------------------------
+
+  req.flash(
+    "success",
+    "New Listing Created!"
+  );
+
+
+  // ----------------------------------------
+  // Redirect to Listings
+  // ----------------------------------------
+
   res.redirect("/listings");
 };
 
-module.exports.showListings = async (req, res) => {
-  let { id } = req.params;
+
+// ============================================
+// 6. SHOW SINGLE LISTING
+// ============================================
+//
+// GET /listings/:id
+//
+// Also populates:
+//
+//     reviews
+//         ↓
+//     review author
+//
+// and:
+//
+//     listing owner
+//
+
+module.exports.showListings = async (
+  req,
+  res
+) => {
+
+  const { id } = req.params;
+
+
+  // ----------------------------------------
+  // Find Listing
+  // ----------------------------------------
+
   const listing = await Listing.findById(id)
-    .populate({ path: "reviews", populate: { path: "author" } })
+
+    // Populate reviews and review authors
+    .populate({
+      path: "reviews",
+      populate: {
+        path: "author",
+      },
+    })
+
+    // Populate listing owner
     .populate("owner");
+
+
+  // ----------------------------------------
+  // Listing Not Found
+  // ----------------------------------------
+
   if (!listing) {
-    req.flash("error", "Listing you requested for does not exist!");
-    return res.redirect("/listings");
+
+    req.flash(
+      "error",
+      "Listing you requested for does not exist!"
+    );
+
+    return res.redirect(
+      "/listings"
+    );
   }
-  res.render("listings/show", { listing });
+
+
+  // ----------------------------------------
+  // Render Listing Details
+  // ----------------------------------------
+
+  res.render(
+    "listings/show",
+    {
+      listing,
+    }
+  );
 };
 
-module.exports.renderEditForm = async (req, res) => {
-  let { id } = req.params;
+
+// ============================================
+// 7. RENDER EDIT LISTING FORM
+// ============================================
+//
+// GET /listings/:id/edit
+//
+// The route already checks:
+//
+//     isLoggedIn
+//     isOwner
+//
+// before reaching this controller.
+//
+
+module.exports.renderEditForm = async (
+  req,
+  res
+) => {
+
+  const { id } = req.params;
+
+
+  // ----------------------------------------
+  // Find Listing
+  // ----------------------------------------
+
   const listing = await Listing.findById(id);
+
+
+  // ----------------------------------------
+  // Listing Not Found
+  // ----------------------------------------
+
   if (!listing) {
-    req.flash("error", "Listing you requested for does not exist!");
-    return res.redirect("/listings");
+
+    req.flash(
+      "error",
+      "Listing you requested for does not exist!"
+    );
+
+    return res.redirect(
+      "/listings"
+    );
   }
+
+
+  // ----------------------------------------
+  // Create Smaller Preview Image
+  // ----------------------------------------
+  //
+  // Cloudinary transformation:
+  //
+  //     height = 300px
+  //     width  = 250px
+  //
+
   let originalImageUrl = listing.image.url;
-  originalImageUrl = originalImageUrl.replace("/upload", "/upload/h_300,w_250");
-  res.render("listings/edit", { listing, originalImageUrl });
+
+  originalImageUrl =
+    originalImageUrl.replace(
+      "/upload",
+      "/upload/h_300,w_250"
+    );
+
+
+  // ----------------------------------------
+  // Render Edit Form
+  // ----------------------------------------
+
+  res.render(
+    "listings/edit",
+    {
+      listing,
+      originalImageUrl,
+    }
+  );
 };
 
-module.exports.updateListing = async (req, res) => {
-  let { id } = req.params;
-  let listing = await Listing.findByIdAndUpdate(id, { ...req.body.listing });
 
-  if (typeof req.file !== "undefined") {
-    let url = req.file.path;
-    let filename = req.file.filename;
-    listing.image = { url, filename };
+// ============================================
+// 8. UPDATE LISTING
+// ============================================
+//
+// PATCH /listings/:id
+//
+// Flow:
+//
+//     Find listing
+//          ↓
+//     Update text information
+//          ↓
+//     Check for new image
+//          ↓
+//     Update Cloudinary image if provided
+//          ↓
+//     Save changes
+//
+
+module.exports.updateListing = async (
+  req,
+  res
+) => {
+
+  const { id } = req.params;
+
+
+  // ----------------------------------------
+  // Update Listing Information
+  // ----------------------------------------
+
+  const listing =
+    await Listing.findByIdAndUpdate(
+      id,
+      {
+        ...req.body.listing,
+      },
+      {
+        new: true,
+      }
+    );
+
+
+  // ----------------------------------------
+  // Check for New Image
+  // ----------------------------------------
+
+  if (req.file) {
+
+    const url = req.file.path;
+
+    const filename =
+      req.file.filename;
+
+
+    // Update image information
+    listing.image = {
+      url,
+      filename,
+    };
+
+
+    // Save updated image
     await listing.save();
   }
 
-  req.flash("success", "Listing Updated!");
-  res.redirect(`/listings/${id}`);
+
+  // ----------------------------------------
+  // Success Message
+  // ----------------------------------------
+
+  req.flash(
+    "success",
+    "Listing Updated!"
+  );
+
+
+  // ----------------------------------------
+  // Redirect to Updated Listing
+  // ----------------------------------------
+
+  res.redirect(
+    `/listings/${id}`
+  );
 };
 
-module.exports.deleteListing = async (req, res) => {
-  let { id } = req.params;
+
+// ============================================
+// 9. DELETE LISTING
+// ============================================
+//
+// DELETE /listings/:id
+//
+// The route already checks:
+//
+//     isLoggedIn
+//     isOwner
+//
+// before deleting the listing.
+//
+
+module.exports.deleteListing = async (
+  req,
+  res
+) => {
+
+  const { id } = req.params;
+
+
+  // ----------------------------------------
+  // Delete Listing
+  // ----------------------------------------
+
   await Listing.findByIdAndDelete(id);
-  req.flash("success", "Listing Deleted!");
+
+
+  // ----------------------------------------
+  // Success Message
+  // ----------------------------------------
+
+  req.flash(
+    "success",
+    "Listing Deleted!"
+  );
+
+
+  // ----------------------------------------
+  // Redirect
+  // ----------------------------------------
+
   res.redirect("/listings");
+};
+
+
+module.exports.showListings = async (req, res) => {
+    const { id } = req.params;
+
+    const listing = await Listing.findById(id)
+        .populate({
+            path: "reviews",
+            populate: {
+                path: "author",
+            },
+        })
+        .populate("owner");
+
+    if (!listing) {
+        req.flash(
+            "error",
+            "Listing you requested for does not exist!"
+        );
+
+        return res.redirect("/listings");
+    }
+
+    console.log("========== SHOW LISTING DEBUG ==========");
+    console.log("LISTING ID:", listing._id);
+    console.log("OWNER:", listing.owner);
+
+    if (listing.owner) {
+        console.log("OWNER ID:", listing.owner._id);
+        console.log("OWNER EMAIL:", listing.owner.email);
+        console.log("OWNER USERNAME:", listing.owner.username);
+    }
+
+    console.log("========================================");
+
+    res.render("listings/show", {
+        listing,
+    });
 };

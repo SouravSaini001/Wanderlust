@@ -1,44 +1,138 @@
 <% layout('partials/boilerplate.ejs') %>
 
-  <body>
-    <div class="container mt-5">
-      <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-5">
-          <div class="card shadow rounded-4">
-            <div class="card-body p-4">
-              <h3 class="text-center mb-4 fw-bold">Login</h3>
+<div class="auth-page">
 
-              <form action="/login" method="POST" novalidate class="needs-validation">
-                <!-- Username -->
-                <div class="mb-3">
-                  <label for="username" class="form-label">Username</label>
-                  <input type="text" class="form-control" id="username" name="username"
-                    placeholder="Enter your username" required>
+    <div class="auth-container">
+
+        <div class="auth-card">
+
+            <!-- Header -->
+            <div class="auth-header">
+
+                <div class="auth-icon">
+                    <i class="fa-solid fa-right-to-bracket"></i>
                 </div>
+
+                <h1>Welcome Back</h1>
+
+                <p>Login to continue your Wanderlust journey</p>
+
+            </div>
+
+
+            <!-- Login Form -->
+            <form
+                action="/login"
+                method="POST"
+                novalidate
+                class="needs-validation"
+            >
+
+                <!-- Email -->
+                <div class="auth-form-group">
+
+                    <label
+                        for="email"
+                        class="form-label"
+                    >
+                        Email
+                    </label>
+
+                    <div class="auth-input-wrapper">
+
+                        <i class="fa-regular fa-envelope"></i>
+
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            class="form-control auth-input"
+                            placeholder="Enter your email"
+                            autocomplete="email"
+                            required
+                        >
+
+                        <div class="invalid-feedback">
+                            Please enter your email.
+                        </div>
+
+                    </div>
+
+                </div>
+
 
                 <!-- Password -->
-                <div class="mb-3">
-                  <label for="password" class="form-label">Password</label>
-                  <input type="password" class="form-control" id="password" name="password"
-                    placeholder="Enter your password" required>
+                <div class="auth-form-group">
 
-                  <div class="text-end mb-3">
-                    <a href="/forgot-password">
-                      Forgot Password?
-                    </a>
-                  </div>
+                    <label
+                        for="password"
+                        class="form-label"
+                    >
+                        Password
+                    </label>
+
+                    <div class="auth-input-wrapper">
+
+                        <i class="fa-solid fa-lock"></i>
+
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            class="form-control auth-input"
+                            placeholder="Enter your password"
+                            autocomplete="current-password"
+                            required
+                        >
+
+                        <div class="invalid-feedback">
+                            Please enter your password.
+                        </div>
+
+                    </div>
+
                 </div>
 
-                <!-- Submit -->
-                <button type="submit" class="btn btn-danger w-100 rounded-pill">Login</button>
-              </form>
 
-              <p class="text-center mt-3">
-                Don’t have an account? <a href="/signup" class="text-decoration-none fw-semibold">Sign up</a>
-              </p>
+                <!-- Forgot Password -->
+                <div class="forgot-password">
+
+                    <a href="/forgot-password">
+                        Forgot Password?
+                    </a>
+
+                </div>
+
+
+                <!-- Submit -->
+                <button
+                    type="submit"
+                    class="auth-submit-btn"
+                >
+                    <i class="fa-solid fa-right-to-bracket me-1"></i>
+                    Login
+                </button>
+
+            </form>
+
+
+            <!-- Footer -->
+            <div class="auth-footer">
+
+                <span>Don't have an account?</span>
+
+                <a
+                    href="/signup"
+                    class="auth-signup-link"
+                >
+                    Sign up
+                </a>
+
             </div>
-          </div>
+
         </div>
-      </div>
+
     </div>
-  </body>
+
+</div>
+

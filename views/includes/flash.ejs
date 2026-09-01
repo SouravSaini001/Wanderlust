@@ -1,13 +1,31 @@
-<% if (success.length) { %>
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <%= success %>
+<% if (success && success.length) { %>
+
+    <!-- Success Message -->
+    <div class="alert wanderlust-alert alert-success alert-dismissible fade show" role="alert">
+        <div class="alert-content">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>
+                <%= success %>
+            </span>
+        </div>
+
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
+
     <% } %>
 
-<% if (error.length) { %>
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <%= error %>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    <% } %>
+        <% if (error && error.length) { %>
+
+            <!-- Error Message -->
+            <div class="alert wanderlust-alert alert-danger alert-dismissible fade show" role="alert">
+                <div class="alert-content">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <span>
+                        <%= error %>
+                    </span>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <% } %>

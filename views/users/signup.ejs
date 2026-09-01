@@ -1,60 +1,102 @@
 <% layout('partials/boilerplate.ejs') %>
 
-<body>
-    <div class="container mt-5">
-  <div class="row justify-content-center">
-    <div class="col-md-6 col-lg-5">
-      <div class="card shadow rounded-4">
-        <div class="card-body p-4">
-          <h3 class="text-center mb-4 fw-bold">Sign Up</h3>
-          
-          <form action="/signup" method="POST" novalidate class="needs-validation">
-            <!-- Username -->
-            <div class="mb-3">
-              <label for="username" class="form-label">Username</label>
-              <input 
-                type="text" 
-                class="form-control" 
-                id="username" 
-                name="username" 
-                placeholder="Choose a username" 
-                required>
-            </div>
+  <div class="auth-page">
+    <div class="auth-container">
 
-            <!-- Email -->
-            <div class="mb-3">
-              <label for="email" class="form-label">Email</label>
-              <input 
-                type="email" 
-                class="form-control" 
-                id="email" 
-                name="email" 
-                placeholder="Enter your email" 
-                required>
-            </div>
+      <div class="auth-card">
 
-            <!-- Password -->
-            <div class="mb-3">
-              <label for="password" class="form-label">Password</label>
-              <input 
-                type="password" 
-                class="form-control" 
-                id="password" 
-                name="password" 
-                placeholder="Enter a strong password" 
-                required>
-            </div>
+        <!-- Header -->
+        <div class="auth-header">
+          <div class="auth-icon">
+            <i class="fa-solid fa-user-plus"></i>
+          </div>
 
-            <!-- Submit -->
-            <button type="submit" class="btn btn-danger w-100 rounded-pill">Sign Up</button>
-          </form>
+          <h1>Create your account</h1>
 
-          <p class="text-center mt-3">
-            Already have an account? <a href="/login" class="text-decoration-none fw-semibold">Login</a>
+          <p>
+            Join Wanderlust and start exploring amazing stays.
           </p>
         </div>
+
+        <!-- Signup Form -->
+        <form action="/signup" method="POST" novalidate class="needs-validation auth-form">
+
+          <!-- Username -->
+          <div class="auth-form-group">
+            <label for="username" class="form-label">
+              Username
+            </label>
+
+            <div class="auth-input-wrapper">
+              <i class="fa-regular fa-user"></i>
+
+              <input type="text" class="form-control auth-input" id="username" name="username"
+                placeholder="Choose a username" autocomplete="username" required>
+            </div>
+
+            <div class="invalid-feedback">
+              Please choose a username.
+            </div>
+          </div>
+
+
+          <!-- Email -->
+          <div class="auth-form-group">
+            <label for="email" class="form-label">
+              Email address
+            </label>
+
+            <div class="auth-input-wrapper">
+              <i class="fa-regular fa-envelope"></i>
+
+              <input type="email" class="form-control auth-input" id="email" name="email" placeholder="Enter your email"
+                autocomplete="email" required>
+            </div>
+
+            <div class="invalid-feedback">
+              Please enter a valid email address.
+            </div>
+          </div>
+
+
+          <!-- Password -->
+          <div class="auth-form-group">
+            <label for="password" class="form-label">
+              Password
+            </label>
+
+            <div class="auth-input-wrapper">
+              <i class="fa-solid fa-lock"></i>
+
+              <input type="password" class="form-control auth-input" id="password" name="password"
+                placeholder="Create a strong password" autocomplete="new-password" minlength="6" required>
+            </div>
+
+            <div class="invalid-feedback">
+              Password must be at least 6 characters.
+            </div>
+          </div>
+
+
+          <!-- Submit -->
+          <button type="submit" class="auth-submit-btn">
+            <i class="fa-solid fa-user-plus"></i>
+            Create Account
+          </button>
+
+        </form>
+
+
+        <!-- Login Link -->
+        <div class="auth-footer">
+          <span>Already have an account?</span>
+
+          <a href="/login">
+            Login
+          </a>
+        </div>
+
       </div>
+
     </div>
   </div>
-</div>
-</body>
