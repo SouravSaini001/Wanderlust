@@ -1,71 +1,116 @@
 <% layout("partials/boilerplate") %>
 
-<div class="row mt-5">
+<div class="auth-page">
+    <div class="auth-container">
 
-    <div class="col-md-6 offset-md-3">
+        <div class="auth-card">
 
-        <h2 class="text-center mb-3">
-            Verify OTP
-        </h2>
+            <!-- Header -->
+            <div class="auth-header">
 
-        <p class="text-center text-muted">
-            We have sent a 6-digit OTP to your registered email.
-        </p>
+                <div class="auth-icon">
+                    <i class="fa-solid fa-key"></i>
+                </div>
 
-        <form action="/verify-reset-otp" method="POST">
+                <h1>Verify OTP</h1>
 
-            <div class="mb-3">
-
-                <label
-                    for="otp"
-                    class="form-label"
-                >
-                    Enter OTP
-                </label>
-
-                <input
-                    type="text"
-                    id="otp"
-                    name="otp"
-                    class="form-control text-center"
-                    placeholder="Enter 6 digit OTP"
-                    maxlength="6"
-                    inputmode="numeric"
-                    autocomplete="one-time-code"
-                    required
-                >
+                <p>
+                    We have sent a 6-digit OTP to your registered email.
+                </p>
 
             </div>
 
 
-            <button
-                type="submit"
-                class="btn btn-danger w-100"
+            <!-- Verify Reset OTP -->
+            <form
+                action="/verify-reset-otp"
+                method="POST"
+                class="auth-form needs-validation"
+                novalidate
             >
-                Verify OTP
-            </button>
 
-        </form>
+                <div class="auth-form-group">
+
+                    <label
+                        for="otp"
+                        class="form-label"
+                    >
+                        Enter OTP
+                    </label>
+
+                    <div class="auth-input-wrapper">
+
+                        <i class="fa-solid fa-shield-halved"></i>
+
+                        <input
+                            type="text"
+                            id="otp"
+                            name="otp"
+                            class="form-control auth-input otp-input"
+                            placeholder="Enter 6-digit OTP"
+                            maxlength="6"
+                            pattern="[0-9]{6}"
+                            inputmode="numeric"
+                            autocomplete="one-time-code"
+                            required
+                        >
+
+                    </div>
+
+                    <div class="invalid-feedback">
+                        Please enter a valid 6-digit OTP.
+                    </div>
+
+                </div>
 
 
-        <div class="text-center mt-3">
+                <!-- Verify Button -->
+                <button
+                    type="submit"
+                    class="auth-submit-btn"
+                >
+                    <i class="fa-solid fa-circle-check"></i>
+                    Verify OTP
+                </button>
 
+            </form>
+
+
+            <!-- Resend OTP -->
             <form
                 action="/resend-reset-otp"
                 method="POST"
+                class="otp-resend-form"
             >
+
+                <p>
+                    Didn't receive the code?
+                </p>
 
                 <button
                     type="submit"
-                    class="btn btn-link"
+                    class="otp-resend-btn"
                 >
+                    <i class="fa-solid fa-rotate-right"></i>
                     Resend OTP
                 </button>
 
             </form>
 
+
+            <!-- Back to Login -->
+            <div class="auth-footer">
+
+                <span>Back to</span>
+
+                <a href="/login">
+                    Login
+                </a>
+
+            </div>
+
         </div>
 
     </div>
-
 </div>
+

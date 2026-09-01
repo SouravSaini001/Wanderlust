@@ -1,56 +1,43 @@
-<nav class="navbar navbar-expand-md bg-body-tertiary border-bottom sticky-top">
+<nav class="navbar navbar-expand-md navbar-light bg-white border-bottom sticky-top wanderlust-navbar">
+    <div class="container-fluid px-3 px-md-4">
 
-    <div class="container-fluid">
-
-        <!-- Brand -->
-        <a class="navbar-brand fw-bold" href="/listings">
+        <!-- =========================
+         WANDERLUST BRAND
+         ========================= -->
+        <a class="navbar-brand wanderlust-brand" href="/listings">
             <i class="fa-regular fa-compass"></i>
+            <span>Wanderlust</span>
         </a>
 
-        <!-- Mobile toggle -->
-        <button
-            class="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#navbarNavAltMarkup"
-            aria-controls="navbarNavAltMarkup"
-            aria-expanded="false"
-            aria-label="Toggle navigation">
 
+        <!-- =========================
+         MOBILE MENU BUTTON
+         ========================= -->
+        <button class="navbar-toggler shadow-none" type="button" data-bs-toggle="collapse"
+            data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false"
+            aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
 
-        <!-- Navbar content -->
+
+        <!-- =========================
+         NAVBAR CONTENT
+         ========================= -->
         <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
 
-            <!-- Left links -->
-            <div class="navbar-nav">
-                <a class="nav-link" href="/listings">
-                    Explore
-                </a>
-            </div>
+            <!-- =========================
+             SEARCH
+             ========================= -->
+            <div class="navbar-search">
 
+                <form class="d-flex search-form" role="search">
 
-            <!-- Search -->
-            <div class="search navbar-nav ms-auto">
+                    <input class="form-control searchListing" type="search" placeholder="Search destinations"
+                        aria-label="Search destinations">
 
-                <form class="d-flex" role="search">
-
-                    <input
-                        class="form-control me-2 searchListing"
-                        type="search"
-                        placeholder="Search destinations"
-                        aria-label="Search"
-                    />
-
-                    <button
-                        class="btn btn-outline-success"
-                        type="submit">
-
+                    <button class="btn search-btn" type="submit">
                         <i class="fa-solid fa-magnifying-glass"></i>
-                        &nbsp;
-                        <b>Search</b>
-
+                        <span>Search</span>
                     </button>
 
                 </form>
@@ -58,53 +45,55 @@
             </div>
 
 
-            <!-- Right links -->
-            <div class="navbar-nav ms-auto">
+            <!-- =========================
+             RIGHT SIDE NAVIGATION
+             ========================= -->
+            <div class="navbar-nav navbar-right-links">
 
-                <a
-                    class="nav-link"
-                    href="/listings/new">
+                <!-- Airbnb Your Home -->
+                <a class="nav-link host-link" href="/listings/new">
                     Airbnb your home
                 </a>
 
 
                 <% if (!currUser) { %>
 
-                    <!-- User is NOT logged in -->
+                    <!-- =========================
+                     USER NOT LOGGED IN
+                     ========================= -->
 
-                    <a
-                        class="nav-link fw-semibold"
-                        href="/login">
+                    <!-- Login -->
+                    <a class="nav-link auth-link" href="/login">
                         Login
                     </a>
 
-                    <a
-                        class="btn btn-danger rounded-pill ms-2 fw-semibold"
-                        href="/signup">
+                    <!-- Sign Up -->
+                    <a class="btn signup-btn" href="/signup">
                         Sign Up
                     </a>
 
 
-                <% } else { %>
+                    <% } else { %>
 
-                    <!-- User IS logged in -->
+                        <!-- =========================
+                     USER LOGGED IN
+                     ========================= -->
 
-                    <span class="nav-link fw-semibold">
-                        Hello, <%= currUser.username %> 👋
-                    </span>
+                        <!-- Username -->
+                        <span class="nav-link user-greeting">
+                            Hello, <%= currUser.username %> 👋
+                        </span>
 
-                    <a
-                        class="btn btn-danger rounded-pill ms-2 fw-semibold"
-                        href="/logout">
-                        Logout
-                    </a>
+                        <!-- Logout -->
+                        <a class="btn logout-btn" href="/logout">
+                            Logout
+                        </a>
 
-                <% } %>
+                        <% } %>
 
             </div>
 
         </div>
-
     </div>
 
 </nav>
