@@ -65,6 +65,17 @@ module.exports.listingJoiSchema = Joi.object({
         "any.required": "Price is mandatory",
       }),
 
+    rooms: Joi.number()
+      .integer()
+      .min(1)
+      .required()
+      .messages({
+        "number.base": "Number of rooms must be a number",
+        "number.integer": "Number of rooms must be a whole number",
+        "number.min": "There must be at least 1 room",
+        "any.required": "Number of rooms is mandatory",
+      }),
+
     location: Joi.string()
       .required()
       .messages({

@@ -217,6 +217,18 @@
         </div>
 
 
+        <!-- Input no of rooms available  -->
+        <div class="mb-3">
+          <label for="rooms" class="form-label">Number of Rooms</label>
+
+          <input type="number" name="listing[rooms]" id="rooms" class="form-control" min="1" step="1"
+            value="<%= listing.rooms %>" required>
+
+          <div class="form-text">
+            Total number of rooms available at this property.
+          </div>
+        </div>
+
         <!-- Location -->
         <div class="mb-4">
 
