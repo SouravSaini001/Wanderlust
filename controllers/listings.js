@@ -60,38 +60,45 @@ const geocodingClient = mbxGeocoding({
 
 module.exports.index = async (req, res) => {
 
-  const { category } = req.query;
+  const { category, search } = req.query;
 
-  let allListings;
+  let filter = {};
 
+  // ============================
+  // SEARCH
+  // ============================
 
-  // ----------------------------------------
-  // Filter by category
-  // ----------------------------------------
-
-  if (category) {
-
-    allListings = await Listing.find({
-      category,
-    });
-
-  } else {
-
-    // No category selected
-    allListings = await Listing.find({});
+  if (search) {
+    filter.$or = [
+      { title: { $regex: search, $options: "i" } },
+      { location: { $regex: search, $options: "i" } },
+      { country: { $regex: search, $options: "i" } }
+    ];
   }
 
+  // ============================
+  // CATEGORY
+  // ============================
 
-  // ----------------------------------------
-  // Render listings page
-  // ----------------------------------------
+  if (category) {
+    filter.category = category;
+  }
 
-  res.render(
-    "listings/index",
-    {
-      allListings,
-    }
-  );
+  // ============================
+  // FIND LISTINGS
+  // ============================
+
+  const allListings = await Listing.find(filter);
+
+  // ============================
+  // RENDER
+  // ============================
+
+  res.render("listings/index", {
+    allListings,
+    search,
+    category
+  });
 };
 
 
