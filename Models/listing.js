@@ -169,6 +169,12 @@ const listingSchema = new Schema({
             required: true,
         },
     },
+
+    rooms: {
+        type: Number,
+        required: true,
+        min: 1
+    },
 });
 
 

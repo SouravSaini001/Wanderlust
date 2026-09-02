@@ -1,0 +1,653 @@
+<% layout("partials/boilerplate") %>
+
+    <div class="container booking-page py-5">
+
+        <div class="row justify-content-center">
+
+            <div class="col-lg-7 col-md-9">
+
+                <div class="card shadow-sm booking-card">
+
+                    <div class="card-body p-4 p-md-5">
+
+                        <h2 class="booking-title mb-2">
+                            Book Your Stay
+                        </h2>
+
+                        <p class="booking-subtitle mb-4">
+                            <%= listing.title %>
+                        </p>
+
+
+                        <!-- ============================================
+                         BOOKING FORM
+                         ============================================ -->
+
+                        <form id="bookingForm" action="/book/<%= listing._id %>" method="POST" class="booking-form">
+
+
+                            <!-- ============================================
+                             CHECK-IN
+                             ============================================ -->
+
+                            <div class="mb-3">
+
+                                <label for="checkIn" class="form-label">
+                                    Check-in Date
+                                </label>
+
+                                <input type="date" id="checkIn" name="checkIn" class="form-control" required>
+
+                            </div>
+
+
+                            <!-- ============================================
+                             CHECK-OUT
+                             ============================================ -->
+
+                            <div class="mb-3">
+
+                                <label for="checkOut" class="form-label">
+                                    Check-out Date
+                                </label>
+
+                                <input type="date" id="checkOut" name="checkOut" class="form-control" required>
+
+                            </div>
+
+
+                            <!-- ============================================
+                             GUESTS
+                             ============================================ -->
+
+                            <div class="mb-3">
+
+                                <label for="guests" class="form-label">
+                                    Number of Guests
+                                </label>
+
+                                <input type="number" id="guests" name="guests" class="form-control" min="1" value="1"
+                                    required>
+
+                                <div id="guestError" class="text-danger small mt-1"></div>
+
+                                <div class="form-text">
+                                    Maximum 2 guests are allowed per room.
+                                </div>
+
+                            </div>
+
+
+                            <!-- ============================================
+                             ROOMS
+                             ============================================ -->
+
+                            <div class="mb-3">
+
+                                <label for="rooms" class="form-label">
+                                    Number of Rooms
+                                </label>
+
+                                <input type="number" id="rooms" name="rooms" class="form-control" min="1"
+                                    max="<%= listing.rooms %>" value="1" required>
+
+                                <div id="roomAvailability" class="form-text">
+                                    Total rooms:
+                                    <strong>
+                                        <%= listing.rooms %>
+                                    </strong>
+                                </div>
+
+                            </div>
+
+
+                            <!-- ============================================
+                             PRICE INFORMATION
+                             ============================================ -->
+
+                            <div class="card price-card mt-4">
+
+                                <div class="card-body">
+
+                                    <h5 class="mb-3">
+                                        Price Details
+                                    </h5>
+
+
+                                    <!-- PRICE PER NIGHT -->
+
+                                    <div class="price-row">
+
+                                        <span>
+                                            Price per room/night
+                                        </span>
+
+                                        <strong>
+                                            ₹<%= listing.price.toLocaleString("en-IN") %>
+                                        </strong>
+
+                                    </div>
+
+
+                                    <!-- NUMBER OF NIGHTS -->
+
+                                    <div class="price-row">
+
+                                        <span>
+                                            Number of nights
+                                        </span>
+
+                                        <strong id="numberOfNights">
+                                            0
+                                        </strong>
+
+                                    </div>
+
+
+                                    <!-- NUMBER OF ROOMS -->
+
+                                    <div class="price-row">
+
+                                        <span>
+                                            Number of rooms
+                                        </span>
+
+                                        <strong id="selectedRooms">
+                                            1
+                                        </strong>
+
+                                    </div>
+
+
+                                    <hr>
+
+
+                                    <!-- TOTAL PRICE -->
+
+                                    <div class="total-price-row">
+
+                                        <strong>
+                                            Total Price
+                                        </strong>
+
+                                        <strong id="totalPrice" class="total-price">
+                                            ₹0
+                                        </strong>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            <!-- ============================================
+                             SUBMIT
+                             ============================================ -->
+
+                            <button type="submit" class="btn btn-dark w-100 booking-btn mt-4">
+                                Continue Booking
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ============================================
+     JAVASCRIPT
+     ============================================ -->
+
+    <script>
+
+        // ============================================
+        // GET FORM ELEMENTS
+        // ============================================
+
+        const guests =
+            document.getElementById("guests");
+
+        const guestError =
+            document.getElementById("guestError");
+
+        const checkIn =
+            document.getElementById("checkIn");
+
+        const checkOut =
+            document.getElementById("checkOut");
+
+        const rooms =
+            document.getElementById("rooms");
+
+        const roomAvailability =
+            document.getElementById("roomAvailability");
+
+
+        // ============================================
+        // GET PRICE DISPLAY ELEMENTS
+        // ============================================
+
+        const numberOfNights =
+            document.getElementById("numberOfNights");
+
+        const selectedRooms =
+            document.getElementById("selectedRooms");
+
+        const totalPrice =
+            document.getElementById("totalPrice");
+
+
+        // ============================================
+        // BOOKING FORM
+        // ============================================
+
+        const bookingForm =
+            document.getElementById("bookingForm");
+
+
+        // ============================================
+        // PRICE OF ONE ROOM FOR ONE NIGHT
+        // ============================================
+
+        const pricePerNight =
+        <%= listing.price %>;
+
+
+        // ============================================
+        // TOTAL ROOMS IN THIS PROPERTY
+        // ============================================
+
+        const totalPropertyRooms =
+        <%= listing.rooms %>;
+
+
+        // ============================================
+        // SET TODAY AS MINIMUM CHECK-IN DATE
+        // ============================================
+
+        const today = new Date();
+
+        const todayString =
+            today.toISOString().split("T")[0];
+
+        checkIn.min = todayString;
+
+
+        // ============================================
+        // CALCULATE TOTAL PRICE
+        // ============================================
+
+        function calculateTotalPrice() {
+
+            // Dates not selected
+
+            if (
+                !checkIn.value ||
+                !checkOut.value
+            ) {
+
+                numberOfNights.textContent = "0";
+
+                selectedRooms.textContent =
+                    rooms.value || "1";
+
+                totalPrice.textContent =
+                    "₹0";
+
+                return;
+            }
+
+
+            // Convert dates
+
+            const checkInDate =
+                new Date(checkIn.value);
+
+            const checkOutDate =
+                new Date(checkOut.value);
+
+
+            // Calculate difference
+
+            const difference =
+                checkOutDate - checkInDate;
+
+
+            // Convert milliseconds to days
+
+            const nights =
+                difference /
+                (1000 * 60 * 60 * 24);
+
+
+            // Invalid date
+
+            if (nights <= 0) {
+
+                numberOfNights.textContent =
+                    "0";
+
+                totalPrice.textContent =
+                    "₹0";
+
+                return;
+            }
+
+
+            // Number of rooms
+
+            const numberOfRooms =
+                Number(rooms.value);
+
+
+            // Calculate total
+
+            const total =
+                pricePerNight *
+                nights *
+                numberOfRooms;
+
+
+            // Display nights
+
+            numberOfNights.textContent =
+                nights;
+
+
+            // Display rooms
+
+            selectedRooms.textContent =
+                numberOfRooms;
+
+
+            // Display total
+
+            totalPrice.textContent =
+                "₹" +
+                total.toLocaleString("en-IN");
+
+        }
+
+
+        // ============================================
+        // VALIDATE GUESTS
+        // ============================================
+
+        function validateGuests() {
+
+            const numberOfGuests =
+                Number(guests.value);
+
+            const numberOfRooms =
+                Number(rooms.value);
+
+
+            const maximumGuests =
+                numberOfRooms * 2;
+
+
+            if (
+                numberOfGuests < 1 ||
+                numberOfGuests > maximumGuests
+            ) {
+
+                guestError.textContent =
+                    `Maximum ${maximumGuests} guests allowed for ${numberOfRooms} room(s).`;
+
+                return false;
+            }
+
+
+            guestError.textContent = "";
+
+            return true;
+        }
+
+
+        // ============================================
+        // CHECK ROOM AVAILABILITY
+        // ============================================
+
+        async function updateRoomAvailability() {
+
+            // Don't check until both dates are selected
+
+            if (
+                !checkIn.value ||
+                !checkOut.value
+            ) {
+
+                roomAvailability.innerHTML =
+                    `Total rooms:
+                <strong>${totalPropertyRooms}</strong>`;
+
+                rooms.max =
+                    totalPropertyRooms;
+
+                rooms.disabled =
+                    false;
+
+                return;
+            }
+
+
+            // Check valid date range
+
+            if (
+                new Date(checkIn.value) >=
+                new Date(checkOut.value)
+            ) {
+
+                roomAvailability.innerHTML =
+                    `<span class="text-danger">
+                    Please select a valid date range.
+                </span>`;
+
+                rooms.max = 0;
+
+                rooms.disabled = true;
+
+                return;
+            }
+
+
+            try {
+
+                // Ask server for availability
+
+                const response =
+                    await fetch(
+                        `/book/<%= listing._id %>/availability?checkIn=${checkIn.value}&checkOut=${checkOut.value}`
+                    );
+
+
+                // Convert response to JSON
+
+                const data =
+                    await response.json();
+
+
+                // ============================================
+                // NO ROOMS AVAILABLE
+                // ============================================
+
+                if (
+                    data.availableRooms === 0
+                ) {
+
+                    roomAvailability.innerHTML =
+                        `<span class="text-danger">
+                        No rooms available for these dates.
+                    </span>`;
+
+                    rooms.max = 0;
+
+                    rooms.value = 1;
+
+                    rooms.disabled = true;
+
+                    selectedRooms.textContent =
+                        "0";
+
+                    calculateTotalPrice();
+
+                    return;
+                }
+
+
+                // ============================================
+                // ROOMS AVAILABLE
+                // ============================================
+
+                roomAvailability.innerHTML =
+                    `<span class="text-success">
+                    <strong>${data.availableRooms}</strong>
+                    room(s) available for your selected dates.
+                </span>`;
+
+
+                // Enable room selection
+
+                rooms.disabled =
+                    false;
+
+
+                // Update maximum rooms
+
+                rooms.max =
+                    data.availableRooms;
+
+
+                // If current selection is greater
+                // than available rooms
+
+                if (
+                    Number(rooms.value) >
+                    data.availableRooms
+                ) {
+
+                    rooms.value =
+                        data.availableRooms;
+                }
+
+
+                // Update guest validation
+
+                validateGuests();
+
+
+                // Update price
+
+                calculateTotalPrice();
+
+
+            } catch (error) {
+
+                console.error(
+                    "Availability error:",
+                    error
+                );
+
+
+                roomAvailability.innerHTML =
+                    `<span class="text-danger">
+                    Unable to check room availability.
+                </span>`;
+
+            }
+
+        }
+
+
+        // ============================================
+        // CHECK-IN CHANGE
+        // ============================================
+
+        checkIn.addEventListener(
+            "change",
+            function () {
+
+                checkOut.min =
+                    checkIn.value;
+
+                calculateTotalPrice();
+
+                updateRoomAvailability();
+
+            }
+        );
+
+
+        // ============================================
+        // CHECK-OUT CHANGE
+        // ============================================
+
+        checkOut.addEventListener(
+            "change",
+            function () {
+
+                calculateTotalPrice();
+
+                updateRoomAvailability();
+
+            }
+        );
+
+
+        // ============================================
+        // ROOM CHANGE
+        // ============================================
+
+        rooms.addEventListener(
+            "input",
+            function () {
+
+                validateGuests();
+
+                calculateTotalPrice();
+
+            }
+        );
+
+
+        // ============================================
+        // GUEST CHANGE
+        // ============================================
+
+        guests.addEventListener(
+            "input",
+            function () {
+
+                validateGuests();
+
+            }
+        );
+
+
+        // ============================================
+        // FORM SUBMISSION
+        // ============================================
+
+        bookingForm.addEventListener(
+            "submit",
+            function (event) {
+
+                if (!validateGuests()) {
+
+                    event.preventDefault();
+
+                    return;
+                }
+
+            }
+        );
+
+    </script>
