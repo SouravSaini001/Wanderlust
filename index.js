@@ -207,6 +207,14 @@ app.get("/", (req, res) => {
     res.redirect("/listings");
 });
 
+app.get("/privacy", (req, res) => {
+    res.render("pages/privacy");
+});
+
+app.get("/terms", (req, res) => {
+    res.render("pages/terms");
+});
+
 // Listing routes
 app.use("/listings", listingsRouter);
 
