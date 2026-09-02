@@ -74,6 +74,11 @@
             </span>
           </div>
 
+          <a href="/book/<%= listing._id %>" class="btn btn-dark">
+            <i class="fa-solid fa-calendar-check me-1"></i>
+            Book Now
+          </a>
+
           <!-- Owner Actions -->
           <% if (currUser && listing.owner && currUser._id.equals(listing.owner._id)) { %>
 

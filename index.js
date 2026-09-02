@@ -45,6 +45,7 @@ const User = require("./Models/user.js");
 const listingsRouter = require("./routes/listing.js");
 const reviewsRouter = require("./routes/review.js");
 const userRouter = require("./routes/user.js");
+const bookingsRouter = require("./routes/bookings.js");
 
 // ============================================
 // 4. APP & DATABASE CONFIGURATION
@@ -220,6 +221,9 @@ app.use("/listings", listingsRouter);
 
 // Review routes
 app.use("/listings/:id/reviews", reviewsRouter);
+
+//Booking route.
+app.use("/book", bookingsRouter);
 
 // User authentication routes
 app.use("/", userRouter);
