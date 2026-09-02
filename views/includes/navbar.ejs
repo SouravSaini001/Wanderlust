@@ -29,11 +29,10 @@
              SEARCH
              ========================= -->
             <div class="navbar-search">
+                <form class="d-flex search-form" action="/listings" method="GET" role="search">
 
-                <form class="d-flex search-form" role="search">
-
-                    <input class="form-control searchListing" type="search" placeholder="Search destinations"
-                        aria-label="Search destinations">
+                    <input class="form-control searchListing" type="search" name="search"
+                        placeholder="Search destinations" aria-label="Search destinations">
 
                     <button class="btn search-btn" type="submit">
                         <i class="fa-solid fa-magnifying-glass"></i>
@@ -41,7 +40,6 @@
                     </button>
 
                 </form>
-
             </div>
 
 
