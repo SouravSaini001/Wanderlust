@@ -1,0 +1,658 @@
+<% layout("partials/boilerplate") %>
+
+    <div class="container py-5">
+
+        <div class="row justify-content-center">
+
+            <div class="col-12 col-lg-8">
+
+                <!-- ========================================= -->
+                <!-- PAGE HEADER -->
+                <!-- ========================================= -->
+
+                <div class="text-center mb-4">
+
+                    <h1 class="fw-bold">
+                        Booking Confirmation
+                    </h1>
+
+                    <p class="text-muted">
+                        Review your booking details before payment.
+                    </p>
+
+                </div>
+
+
+                <!-- ========================================= -->
+                <!-- BOOKING CARD -->
+                <!-- ========================================= -->
+
+                <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+
+                    <!-- HOTEL IMAGE -->
+
+                    <% if (listing.image && listing.image.url) { %>
+
+                        <img src="<%= listing.image.url %>" class="card-img-top" alt="<%= listing.title %>"
+                            style="height: 280px; object-fit: cover;">
+
+                        <% } %>
+
+
+                            <div class="card-body p-4 p-md-5">
+
+                                <!-- HOTEL NAME -->
+
+                                <h2 class="fw-bold mb-1">
+                                    <%= listing.title %>
+                                </h2>
+
+                                <% if (listing.location) { %>
+
+                                    <p class="text-muted mb-4">
+
+                                        <i class="fa-solid fa-location-dot"></i>
+
+                                        <%= listing.location %>
+
+                                    </p>
+
+                                    <% } %>
+
+
+                                        <!-- ===================================== -->
+                                        <!-- BOOKING DETAILS -->
+                                        <!-- ===================================== -->
+
+                                        <div class="border rounded-3 p-3 mb-4">
+
+                                            <h5 class="fw-bold mb-3">
+                                                Stay Details
+                                            </h5>
+
+
+                                            <!-- CHECK IN -->
+
+                                            <div class="d-flex justify-content-between mb-3">
+
+                                                <span class="text-muted">
+                                                    Check-in
+                                                </span>
+
+                                                <strong>
+
+                                                    <%= booking.checkIn.toLocaleDateString( "en-IN" , { day: "2-digit" ,
+                                                        month: "short" , year: "numeric" } ) %>
+
+                                                </strong>
+
+                                            </div>
+
+
+                                            <!-- CHECK OUT -->
+
+                                            <div class="d-flex justify-content-between mb-3">
+
+                                                <span class="text-muted">
+                                                    Check-out
+                                                </span>
+
+                                                <strong>
+
+                                                    <%= booking.checkOut.toLocaleDateString( "en-IN" , { day: "2-digit"
+                                                        , month: "short" , year: "numeric" } ) %>
+
+                                                </strong>
+
+                                            </div>
+
+
+                                            <!-- NIGHTS -->
+
+                                            <div class="d-flex justify-content-between mb-3">
+
+                                                <span class="text-muted">
+                                                    Nights
+                                                </span>
+
+                                                <strong>
+                                                    <%= nights %>
+                                                </strong>
+
+                                            </div>
+
+
+                                            <!-- GUESTS -->
+
+                                            <div class="d-flex justify-content-between mb-3">
+
+                                                <span class="text-muted">
+                                                    Guests
+                                                </span>
+
+                                                <strong>
+                                                    <%= booking.guests %>
+                                                </strong>
+
+                                            </div>
+
+
+                                            <!-- ROOMS -->
+
+                                            <div class="d-flex justify-content-between">
+
+                                                <span class="text-muted">
+                                                    Rooms
+                                                </span>
+
+                                                <strong>
+                                                    <%= booking.rooms %>
+                                                </strong>
+
+                                            </div>
+
+                                        </div>
+
+
+                                        <!-- ===================================== -->
+                                        <!-- PRICE DETAILS -->
+                                        <!-- ===================================== -->
+
+                                        <div class="border rounded-3 p-3 mb-4">
+
+                                            <h5 class="fw-bold mb-3">
+                                                Price Details
+                                            </h5>
+
+
+                                            <div class="d-flex justify-content-between mb-2">
+
+                                                <span>
+                                                    Room price
+                                                </span>
+
+                                                <span>
+                                                    ₹<%= Number( listing.price ).toLocaleString("en-IN") %>
+                                                </span>
+
+                                            </div>
+
+
+                                            <div class="d-flex justify-content-between mb-2">
+
+                                                <span>
+                                                    Rooms
+                                                </span>
+
+                                                <span>
+                                                    × <%= booking.rooms %>
+                                                </span>
+
+                                            </div>
+
+
+                                            <div class="d-flex justify-content-between mb-3">
+
+                                                <span>
+                                                    Nights
+                                                </span>
+
+                                                <span>
+                                                    × <%= nights %>
+                                                </span>
+
+                                            </div>
+
+
+                                            <hr>
+
+
+                                            <div class="d-flex justify-content-between align-items-center">
+
+                                                <strong class="fs-5">
+                                                    Total
+                                                </strong>
+
+                                                <strong class="fs-4">
+
+                                                    ₹<%= Number( booking.totalPrice ).toLocaleString("en-IN") %>
+
+                                                </strong>
+
+                                            </div>
+
+                                        </div>
+
+
+                                        <!-- ===================================== -->
+                                        <!-- BOOKING STATUS -->
+                                        <!-- ===================================== -->
+
+                                        <div id="bookingStatus" class="alert alert-warning rounded-3">
+
+                                            <strong>
+                                                Booking status:
+                                            </strong>
+
+                                            Pending payment
+
+                                            <br>
+
+                                            <small>
+                                                Your booking will be confirmed after successful payment.
+                                            </small>
+
+                                        </div>
+
+
+                                        <!-- ===================================== -->
+                                        <!-- PAYMENT BUTTON -->
+                                        <!-- ===================================== -->
+
+                                        <div class="d-grid gap-2">
+
+                                            <button type="button" id="payButton"
+                                                class="btn btn-primary btn-lg rounded-3">
+                                                <i class="fa-solid fa-lock me-2"></i>
+                                                Confirm & Pay ₹<%= Number( booking.totalPrice ).toLocaleString("en-IN")
+                                                    %>
+                                            </button>
+
+
+                                            <a href="/listings/<%= listing._id %>"
+                                                class="btn btn-outline-secondary rounded-3">
+                                                Back to Listing
+                                            </a>
+
+                                        </div>
+
+
+                                        <!-- ===================================== -->
+                                        <!-- PAYMENT NOTE -->
+                                        <!-- ===================================== -->
+
+                                        <p class="text-center text-muted small mt-3 mb-0">
+
+                                            Secure payment powered by Razorpay.
+
+                                        </p>
+
+                            </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================================= -->
+    <!-- RAZORPAY CHECKOUT SCRIPT -->
+    <!-- ========================================= -->
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+
+    <script>
+
+        // ============================================
+        // ELEMENTS
+        // ============================================
+
+        const payButton =
+            document.getElementById("payButton");
+
+        const bookingStatus =
+            document.getElementById("bookingStatus");
+
+
+        // ============================================
+        // BOOKING ID
+        // ============================================
+
+        const bookingId =
+            "<%= booking._id %>";
+
+
+        // ============================================
+        // RAZORPAY KEY
+        // ============================================
+
+        const razorpayKeyId =
+            "<%= razorpayKeyId %>";
+
+
+        // ============================================
+        // PAYMENT BUTTON
+        // ============================================
+
+        payButton.addEventListener(
+            "click",
+            async function () {
+
+                // ------------------------------------------
+                // DISABLE BUTTON
+                // ------------------------------------------
+
+                payButton.disabled = true;
+
+                payButton.innerHTML =
+                    '<i class="fa-solid fa-spinner fa-spin me-2"></i>' +
+                    'Creating payment...';
+
+
+                try {
+
+                    // ========================================
+                    // CREATE RAZORPAY ORDER
+                    // ========================================
+
+                    const orderResponse =
+                        await fetch(
+                            `/book/${bookingId}/pay`,
+                            {
+                                method: "POST",
+
+                                headers: {
+                                    "Content-Type":
+                                        "application/json",
+                                },
+                            }
+                        );
+
+
+                    const orderData =
+                        await orderResponse.json();
+
+
+                    // ========================================
+                    // CHECK ORDER CREATION
+                    // ========================================
+
+                    if (!orderResponse.ok ||
+                        !orderData.success) {
+
+                        throw new Error(
+                            orderData.message ||
+                            "Unable to create payment order."
+                        );
+
+                    }
+
+
+                    // ========================================
+                    // RAZORPAY OPTIONS
+                    // ========================================
+
+                    const options = {
+
+                        key:
+                            orderData.keyId ||
+                            razorpayKeyId,
+
+                        amount:
+                            orderData.amount,
+
+                        currency:
+                            orderData.currency,
+
+                        name:
+                            "Wanderlust",
+
+                        description:
+                            "Hotel Booking Payment",
+
+                        order_id:
+                            orderData.orderId,
+
+                        prefill: {
+
+                            name:
+                                "<%= booking.user.name || '' %>",
+
+                            email:
+                                "<%= booking.user.email || '' %>"
+
+                        },
+
+                        theme: {
+                            color: "#0d6efd"
+                        },
+
+
+                        // ======================================
+                        // PAYMENT SUCCESS
+                        // ======================================
+
+                        handler:
+                            async function (response) {
+
+                                bookingStatus.className =
+                                    "alert alert-info rounded-3";
+
+                                bookingStatus.innerHTML =
+                                    "<strong>Payment received.</strong>" +
+                                    "<br>Verifying payment...";
+
+
+                                payButton.disabled = true;
+
+                                payButton.innerHTML =
+                                    '<i class="fa-solid fa-spinner fa-spin me-2"></i>' +
+                                    'Verifying payment...';
+
+
+                                try {
+
+                                    // =================================
+                                    // VERIFY PAYMENT ON SERVER
+                                    // =================================
+
+                                    const verifyResponse =
+                                        await fetch(
+                                            `/book/${bookingId}/payment/verify`,
+                                            {
+
+                                                method: "POST",
+
+                                                headers: {
+                                                    "Content-Type":
+                                                        "application/json",
+                                                },
+
+                                                body:
+                                                    JSON.stringify({
+
+                                                        razorpay_payment_id:
+                                                            response.razorpay_payment_id,
+
+                                                        razorpay_order_id:
+                                                            response.razorpay_order_id,
+
+                                                        razorpay_signature:
+                                                            response.razorpay_signature
+
+                                                    })
+
+                                            }
+                                        );
+
+
+                                    const verifyData =
+                                        await verifyResponse.json();
+
+
+                                    // =================================
+                                    // PAYMENT VERIFIED
+                                    // =================================
+
+                                    if (
+                                        verifyResponse.ok &&
+                                        verifyData.success
+                                    ) {
+
+                                        bookingStatus.className =
+                                            "alert alert-success rounded-3";
+
+                                        bookingStatus.innerHTML =
+                                            "<strong>Payment successful!</strong>" +
+                                            "<br>Your booking has been confirmed.";
+
+
+                                        payButton.innerHTML =
+                                            '<i class="fa-solid fa-check me-2"></i>' +
+                                            'Booking Confirmed';
+
+
+                                        // ===============================
+                                        // REDIRECT
+                                        // ===============================
+
+                                        setTimeout(
+                                            function () {
+                                                window.location.href =
+                                                    verifyData.redirect ||
+                                                    `/book/${bookingId}/success`;
+                                            },
+                                            1200
+                                        );
+
+                                    } else {
+
+                                        throw new Error(
+                                            verifyData.message ||
+                                            "Payment verification failed."
+                                        );
+
+                                    }
+
+                                } catch (error) {
+
+                                    console.error(
+                                        "Payment verification error:",
+                                        error
+                                    );
+
+
+                                    bookingStatus.className =
+                                        "alert alert-danger rounded-3";
+
+                                    bookingStatus.innerHTML =
+                                        "<strong>Payment verification failed.</strong>" +
+                                        "<br>Please contact support if money was deducted.";
+
+
+                                    payButton.disabled = false;
+
+                                    payButton.innerHTML =
+                                        '<i class="fa-solid fa-lock me-2"></i>' +
+                                        'Try Again';
+
+                                }
+
+                            },
+
+
+                        // ======================================
+                        // PAYMENT MODAL CLOSED / FAILED
+                        // ======================================
+
+                        modal: {
+
+                            ondismiss:
+                                function () {
+
+                                    payButton.disabled = false;
+
+                                    payButton.innerHTML =
+                                        '<i class="fa-solid fa-lock me-2"></i>' +
+                                        'Confirm & Pay ₹<%= Number(booking.totalPrice).toLocaleString("en-IN") %>';
+
+                                }
+
+                        }
+
+                    };
+
+
+                    // ========================================
+                    // OPEN RAZORPAY
+                    // ========================================
+
+                    const razorpay =
+                        new Razorpay(options);
+
+
+                    // ========================================
+                    // RAZORPAY ERROR
+                    // ========================================
+
+                    razorpay.on(
+                        "payment.failed",
+                        function (response) {
+
+                            console.error(
+                                "Razorpay payment failed:",
+                                response.error
+                            );
+
+
+                            bookingStatus.className =
+                                "alert alert-danger rounded-3";
+
+                            bookingStatus.innerHTML =
+                                "<strong>Payment failed.</strong>" +
+                                "<br>" +
+                                (
+                                    response.error.description ||
+                                    "Please try again."
+                                );
+
+
+                            payButton.disabled = false;
+
+                            payButton.innerHTML =
+                                '<i class="fa-solid fa-lock me-2"></i>' +
+                                'Try Again';
+
+                        }
+                    );
+
+
+                    // ========================================
+                    // OPEN CHECKOUT
+                    // ========================================
+
+                    razorpay.open();
+
+                } catch (error) {
+
+                    console.error(
+                        "Payment initialization error:",
+                        error
+                    );
+
+
+                    bookingStatus.className =
+                        "alert alert-danger rounded-3";
+
+                    bookingStatus.innerHTML =
+                        "<strong>Unable to start payment.</strong>" +
+                        "<br>" +
+                        error.message;
+
+
+                    payButton.disabled = false;
+
+                    payButton.innerHTML =
+                        '<i class="fa-solid fa-lock me-2"></i>' +
+                        'Try Again';
+
+                }
+
+            }
+        );
+
+    </script>
