@@ -1,0 +1,351 @@
+<% layout("partials/boilerplate") %>
+
+<div class="container py-5">
+
+  <div class="row justify-content-center">
+
+    <div class="col-12 col-lg-8">
+
+      <!-- ========================================= -->
+      <!-- SUCCESS HEADER -->
+      <!-- ========================================= -->
+
+      <div class="text-center mb-4">
+
+        <div
+          class="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle bg-success text-white"
+          style="width: 80px; height: 80px;"
+        >
+          <i class="fa-solid fa-check fa-2x"></i>
+        </div>
+
+        <h1 class="fw-bold text-success">
+          Booking Confirmed!
+        </h1>
+
+        <p class="text-muted">
+          Your payment was successful and your booking is confirmed.
+        </p>
+
+      </div>
+
+
+      <!-- ========================================= -->
+      <!-- BOOKING CARD -->
+      <!-- ========================================= -->
+
+      <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+
+        <!-- HOTEL IMAGE -->
+
+        <% if (listing.image && listing.image.url) { %>
+
+          <img
+            src="<%= listing.image.url %>"
+            class="card-img-top"
+            alt="<%= listing.title %>"
+            style="height: 280px; object-fit: cover;"
+          >
+
+        <% } %>
+
+
+        <div class="card-body p-4 p-md-5">
+
+          <!-- HOTEL NAME -->
+
+          <h2 class="fw-bold mb-1">
+            <%= listing.title %>
+          </h2>
+
+          <% if (listing.location) { %>
+
+            <p class="text-muted mb-4">
+
+              <i class="fa-solid fa-location-dot"></i>
+
+              <%= listing.location %>
+
+            </p>
+
+          <% } %>
+
+
+          <!-- ===================================== -->
+          <!-- SUCCESS ALERT -->
+          <!-- ===================================== -->
+
+          <div class="alert alert-success rounded-3 mb-4">
+
+            <div class="d-flex align-items-start">
+
+              <i class="fa-solid fa-circle-check me-3 mt-1"></i>
+
+              <div>
+
+                <strong>
+                  Payment Successful
+                </strong>
+
+                <br>
+
+                <small>
+                  Your booking has been successfully confirmed.
+                </small>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- ===================================== -->
+          <!-- BOOKING DETAILS -->
+          <!-- ===================================== -->
+
+          <div class="border rounded-3 p-3 mb-4">
+
+            <h5 class="fw-bold mb-3">
+              Stay Details
+            </h5>
+
+
+            <!-- CHECK IN -->
+
+            <div class="d-flex justify-content-between mb-3">
+
+              <span class="text-muted">
+                Check-in
+              </span>
+
+              <strong>
+                <%= booking.checkIn.toLocaleDateString(
+                  "en-IN",
+                  {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric"
+                  }
+                ) %>
+              </strong>
+
+            </div>
+
+
+            <!-- CHECK OUT -->
+
+            <div class="d-flex justify-content-between mb-3">
+
+              <span class="text-muted">
+                Check-out
+              </span>
+
+              <strong>
+                <%= booking.checkOut.toLocaleDateString(
+                  "en-IN",
+                  {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric"
+                  }
+                ) %>
+              </strong>
+
+            </div>
+
+
+            <!-- NIGHTS -->
+
+            <div class="d-flex justify-content-between mb-3">
+
+              <span class="text-muted">
+                Nights
+              </span>
+
+              <strong>
+                <%= nights %>
+              </strong>
+
+            </div>
+
+
+            <!-- GUESTS -->
+
+            <div class="d-flex justify-content-between mb-3">
+
+              <span class="text-muted">
+                Guests
+              </span>
+
+              <strong>
+                <%= booking.guests %>
+              </strong>
+
+            </div>
+
+
+            <!-- ROOMS -->
+
+            <div class="d-flex justify-content-between">
+
+              <span class="text-muted">
+                Rooms
+              </span>
+
+              <strong>
+                <%= booking.rooms %>
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <!-- ===================================== -->
+          <!-- PAYMENT DETAILS -->
+          <!-- ===================================== -->
+
+          <div class="border rounded-3 p-3 mb-4">
+
+            <h5 class="fw-bold mb-3">
+              Payment Details
+            </h5>
+
+
+            <!-- PAYMENT STATUS -->
+
+            <div class="d-flex justify-content-between mb-3">
+
+              <span class="text-muted">
+                Payment Status
+              </span>
+
+              <span class="badge bg-success">
+                Paid
+              </span>
+
+            </div>
+
+
+            <!-- PAYMENT ID -->
+
+            <% if (booking.paymentId) { %>
+
+              <div class="d-flex justify-content-between mb-3">
+
+                <span class="text-muted">
+                  Payment ID
+                </span>
+
+                <strong
+                  class="text-break ms-3"
+                  style="font-size: 0.9rem;"
+                >
+                  <%= booking.paymentId %>
+                </strong>
+
+              </div>
+
+            <% } %>
+
+
+            <!-- TOTAL -->
+
+            <div class="d-flex justify-content-between align-items-center">
+
+              <strong class="fs-5">
+                Total Paid
+              </strong>
+
+              <strong class="fs-4 text-success">
+                ₹<%= Number(
+                  booking.totalPrice
+                ).toLocaleString("en-IN") %>
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <!-- ===================================== -->
+          <!-- BOOKING STATUS -->
+          <!-- ===================================== -->
+
+          <div class="border rounded-3 p-3 mb-4">
+
+            <div class="d-flex justify-content-between mb-2">
+
+              <span class="text-muted">
+                Booking Status
+              </span>
+
+              <span class="badge bg-success">
+                Confirmed
+              </span>
+
+            </div>
+
+            <div class="d-flex justify-content-between">
+
+              <span class="text-muted">
+                Booking ID
+              </span>
+
+              <strong class="text-break ms-3">
+                <%= booking._id %>
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <!-- ===================================== -->
+          <!-- ACTION BUTTONS -->
+          <!-- ===================================== -->
+
+          <div class="d-grid gap-2">
+
+            <a
+              href="/listings/<%= listing._id %>"
+              class="btn btn-primary btn-lg rounded-3"
+            >
+              <i class="fa-solid fa-hotel me-2"></i>
+              View Listing
+            </a>
+
+
+            <a
+              href="/listings"
+              class="btn btn-outline-secondary rounded-3"
+            >
+              <i class="fa-solid fa-house me-2"></i>
+              Back to Listings
+            </a>
+
+          </div>
+
+
+          <!-- ===================================== -->
+          <!-- FOOTER MESSAGE -->
+          <!-- ===================================== -->
+
+          <p class="text-center text-muted small mt-4 mb-0">
+
+            <i class="fa-solid fa-shield-halved me-1"></i>
+
+            Your payment was securely processed by Razorpay.
+
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

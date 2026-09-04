@@ -7,13 +7,17 @@ const wrapAsync = require("../utils/wrapAsync.js");
 const {
     renderBookingForm,
     createBooking,
-    checkAvailability
+    checkAvailability,
+    showBookingConfirmation,
+    createPaymentOrder,
+    verifyPayment,
+    showBookingSuccess,
+    renderEditBooking,
+    updateBooking,
+    cancelBooking,
 } = require("../controllers/bookings.js");
 
-const {
-    isLoggedIn
-} = require("../middleware.js");
-
+const { isLoggedIn } = require("../middleware.js");
 
 // ============================================
 // CHECK ROOM AVAILABILITY
@@ -25,7 +29,6 @@ router.get(
     wrapAsync(checkAvailability)
 );
 
-
 // ============================================
 // SHOW BOOKING FORM
 // ============================================
@@ -36,9 +39,8 @@ router.get(
     wrapAsync(renderBookingForm)
 );
 
-
 // ============================================
-// CREATE BOOKING
+// CREATE PENDING BOOKING
 // ============================================
 
 router.post(
@@ -47,5 +49,74 @@ router.post(
     wrapAsync(createBooking)
 );
 
+// ============================================
+// SHOW BOOKING CONFIRMATION
+// ============================================
+
+router.get(
+    "/:id/confirm",
+    isLoggedIn,
+    wrapAsync(showBookingConfirmation)
+);
+
+// ============================================
+// CREATE RAZORPAY ORDER
+// ============================================
+
+router.post(
+    "/:id/pay",
+    isLoggedIn,
+    wrapAsync(createPaymentOrder)
+);
+
+// ============================================
+// VERIFY RAZORPAY PAYMENT
+// ============================================
+
+router.post(
+    "/:id/payment/verify",
+    isLoggedIn,
+    wrapAsync(verifyPayment)
+);
+
+// ============================================
+// BOOKING SUCCESS PAGE
+// ============================================
+
+router.get(
+    "/:id/success",
+    isLoggedIn,
+    wrapAsync(showBookingSuccess)
+);
+
+// ============================================
+// SHOW EDIT BOOKING FORM
+// ============================================
+
+router.get(
+    "/:id/edit",
+    isLoggedIn,
+    wrapAsync(renderEditBooking)
+);
+
+// ============================================
+// UPDATE PENDING BOOKING
+// ============================================
+
+router.put(
+    "/:id",
+    isLoggedIn,
+    wrapAsync(updateBooking)
+);
+
+// ============================================
+// CANCEL / DELETE PENDING BOOKING
+// ============================================
+
+router.delete(
+    "/:id",
+    isLoggedIn,
+    wrapAsync(cancelBooking)
+);
 
 module.exports = router;

@@ -1,9 +1,8 @@
 /**
-
-* ============================================
-* WANDERLUST - MAIN APPLICATION FILE
-* ============================================
-  */
+ * ============================================
+ * WANDERLUST - MAIN APPLICATION FILE
+ * ============================================
+ */
 
 // ============================================
 // 1. ENVIRONMENT CONFIGURATION
@@ -23,11 +22,9 @@ const mongoose = require("mongoose");
 const path = require("path");
 const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
-
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
 const flash = require("connect-flash");
-
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
 
@@ -47,12 +44,19 @@ const reviewsRouter = require("./routes/review.js");
 const userRouter = require("./routes/user.js");
 const bookingsRouter = require("./routes/bookings.js");
 
+// Booking expiration function
+const {
+    expirePendingBookings,
+} = require("./controllers/bookings.js");
+
 // ============================================
 // 4. APP & DATABASE CONFIGURATION
 // ============================================
 
 const app = express();
+
 const PORT = process.env.PORT || 3000;
+
 const dbURL = process.env.ATLASDB_URL;
 
 // ============================================
@@ -106,12 +110,14 @@ const store = MongoStore.create({
 
     // Update session in DB only once every 24 hours
     touchAfter: 24 * 60 * 60,
-
 });
 
 // Handle MongoDB session store errors
 store.on("error", (err) => {
-    console.error("MongoDB Session Store Error:", err);
+    console.error(
+        "MongoDB Session Store Error:",
+        err
+    );
 });
 
 // ============================================
@@ -130,15 +136,22 @@ const sessionOptions = {
 
     cookie: {
         // Session expires after 7 days
-        expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+        expires: new Date(
+            Date.now() +
+            1000 * 60 * 60 * 24 * 7
+        ),
 
         // Session maximum lifetime: 7 days
-        maxAge: 1000 * 60 * 60 * 24 * 7,
+        maxAge:
+            1000 *
+            60 *
+            60 *
+            24 *
+            7,
 
         // Prevent JavaScript from accessing the session cookie
         httpOnly: true,
     },
-
 };
 
 // Enable sessions
@@ -173,10 +186,14 @@ passport.use(
 );
 
 // Store user information in the session
-passport.serializeUser(User.serializeUser());
+passport.serializeUser(
+    User.serializeUser()
+);
 
 // Retrieve user information from the session
-passport.deserializeUser(User.deserializeUser());
+passport.deserializeUser(
+    User.deserializeUser()
+);
 
 // ============================================
 // 12. GLOBAL VARIABLES
@@ -186,17 +203,17 @@ passport.deserializeUser(User.deserializeUser());
 app.use((req, res, next) => {
     // Flash messages
     res.locals.success = req.flash("success");
+
     res.locals.error = req.flash("error");
 
     // Currently logged-in user
     res.locals.currUser = req.user || null;
 
     // Map token for Mapbox
-    res.locals.MAP_TOKEN = process.env.MAP_TOKEN;
+    res.locals.MAP_TOKEN =
+        process.env.MAP_TOKEN;
 
     next();
-
-
 });
 
 // ============================================
@@ -208,25 +225,51 @@ app.get("/", (req, res) => {
     res.redirect("/listings");
 });
 
+// Privacy page
 app.get("/privacy", (req, res) => {
     res.render("pages/privacy");
 });
 
+// Terms page
 app.get("/terms", (req, res) => {
     res.render("pages/terms");
 });
 
-// Listing routes
-app.use("/listings", listingsRouter);
+// ============================================
+// LISTING ROUTES
+// ============================================
 
-// Review routes
-app.use("/listings/:id/reviews", reviewsRouter);
+app.use(
+    "/listings",
+    listingsRouter
+);
 
-//Booking route.
-app.use("/book", bookingsRouter);
+// ============================================
+// REVIEW ROUTES
+// ============================================
 
-// User authentication routes
-app.use("/", userRouter);
+app.use(
+    "/listings/:id/reviews",
+    reviewsRouter
+);
+
+// ============================================
+// BOOKING ROUTES
+// ============================================
+
+app.use(
+    "/book",
+    bookingsRouter
+);
+
+// ============================================
+// USER AUTHENTICATION ROUTES
+// ============================================
+
+app.use(
+    "/",
+    userRouter
+);
 
 // ============================================
 // 14. 404 - PAGE NOT FOUND
@@ -234,27 +277,38 @@ app.use("/", userRouter);
 
 // Runs when no route matches the request
 app.use((req, res, next) => {
-    next(new ExpressError(404, "Page not found!"));
+    next(
+        new ExpressError(
+            404,
+            "Page not found!"
+        )
+    );
 });
 
 // ============================================
 // 15. GLOBAL ERROR HANDLER
 // ============================================
 
-app.use((err, req, res, next) => {
-    const {
-        statusCode = 500,
-        message = "Something went wrong!",
-    } = err;
+app.use(
+    (err, req, res, next) => {
+        const {
+            statusCode = 500,
+            message = "Something went wrong!",
+        } = err;
 
-    // Prevent sending headers twice
-    if (res.headersSent) {
-        return next(err);
+        // Prevent sending headers twice
+        if (res.headersSent) {
+            return next(err);
+        }
+
+        res
+            .status(statusCode)
+            .render(
+                "listings/error",
+                { message }
+            );
     }
-
-    res.status(statusCode).render("listings/error", { message });
-
-});
+);
 
 // ============================================
 // 16. START SERVER
@@ -263,14 +317,27 @@ app.use((err, req, res, next) => {
 // Connect to MongoDB first, then start the Express server
 connectDB()
     .then(() => {
-        console.log("MongoDB connection successful.");
-
+        console.log(
+            "MongoDB connection successful."
+        );
 
         app.listen(PORT, () => {
-            console.log(`Server running at http://localhost:${PORT}`);
+            console.log(
+                `Server running at http://localhost:${PORT}`
+            );
+
+            // ============================================
+            // EXPIRE PENDING BOOKINGS EVERY MINUTE
+            // ============================================
+
+            setInterval(() => {
+                expirePendingBookings();
+            }, 60 * 1000);
         });
     })
     .catch((err) => {
-        console.error("MongoDB Connection Error:", err);
+        console.error(
+            "MongoDB Connection Error:",
+            err
+        );
     });
-
